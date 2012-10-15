@@ -279,11 +279,16 @@ void TimerFunc(int value)
 	glutPostRedisplay();
 }
 
-void CreateLight()
+void CreateLights()
 {
 	GLfloat matSpecular[] = {1, 1, 1, 1};
 	GLfloat matShininess[] = {100};
-	GLfloat lightPosition[] = {1, 1, 1, 0};
+
+	GLfloat light0Position[] = {1, 0.5, 0.75, 0};
+	GLfloat light1Position[] = {-1, 0.5, 0.75, 0};
+	GLfloat lightAmbient[] = {0, 0, 0, 0};
+	GLfloat lightDiffuse[] = {0.4, 0.4, 0.4};
+	GLfloat lightSpecular[] = {0.7, 0.7, 0.7};
 
 	glShadeModel(GL_SMOOTH);
 
@@ -292,11 +297,20 @@ void CreateLight()
 	glMaterialfv(GL_FRONT, GL_SHININESS, matShininess);
 
 	// reference: http://www.opengl.org/sdk/docs/man/xhtml/glLight.xml
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+	glLightfv(GL_LIGHT0, GL_POSITION, light0Position);
+	glLightfv(GL_LIGHT1, GL_POSITION, light1Position);
+
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient);
+	glLightfv(GL_LIGHT1, GL_AMBIENT, lightAmbient);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, lightSpecular);
 
 	glEnable(GL_COLOR_MATERIAL);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
+	glEnable(GL_LIGHT1);
 	glEnable(GL_NORMALIZE);
 }
 
@@ -319,7 +333,7 @@ int main(int argc, char * argv[])
 	debug = false;
 	paused = false;
 
-	CreateLight();
+	CreateLights();
 
 	glutDisplayFunc(Display); 
 	glutReshapeFunc(ReshapeFunc);
