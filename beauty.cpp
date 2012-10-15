@@ -136,4 +136,5 @@ void Beauty::Display()
 	}
 
 	glPopMatrix();
+	glPopMatrix();
 }
