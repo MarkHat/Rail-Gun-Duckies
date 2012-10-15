@@ -5,19 +5,13 @@ Balloon::Balloon()
 	debug = false;
 
 	slices = 50;
-	stacks = 40;
+	stacks = 50;
 	radius = 2;
 
 	numVaVertices = (slices + 1) * (stacks + 1);
 	numVaIndices = (slices + 1) * (stacks) * 6;
 	numDebugVertices = numVaVertices * 2;
 	numDebugIndices = numDebugVertices;
-
-	slices = 50;
-	stacks = 50;
-	radius = 2;
-	numVertices = (slices + 1) * (stacks + 1);
-	numIndices = (slices + 1) * (stacks) * 6;
 }
 
 Balloon::~Balloon()
@@ -162,8 +156,17 @@ void Balloon::ComputeVaNormals()
 				float sinAngleIncrement = pi / (stacks + 1);
 
 				vaNormals.push_back(vaVertices.at(vaIndex));
-				vaNormals.push_back(1);
+				vaNormals.push_back(-cos(pi / 2 + sinAngleIncrement * ((stacks + 1) / 2 - i)) / 1.5);
 				vaNormals.push_back(vaVertices.at(vaIndex + 2));
+
+				int normalIndex = vaNormals.size() - 3;
+				float magnitude = sqrt(vaNormals.at(normalIndex) * vaNormals.at(normalIndex) +
+									   vaNormals.at(normalIndex + 1) * vaNormals.at(normalIndex + 1) +
+									   vaNormals.at(normalIndex + 2) * vaNormals.at(normalIndex + 2));
+
+				vaNormals.at(normalIndex) /= magnitude;
+				vaNormals.at(normalIndex + 1) /= magnitude;
+				vaNormals.at(normalIndex + 2) /= magnitude;
 			}
 		}
 	}
