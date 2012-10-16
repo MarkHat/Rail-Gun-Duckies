@@ -20,6 +20,7 @@ class Ducky
 
 	private:
 		GLuint displayListHandle;
+		GLuint duckyDisplayList;
 
 		glm::vec3 position;
 		glm::vec3 velocity;

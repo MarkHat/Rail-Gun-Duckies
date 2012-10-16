@@ -15,6 +15,7 @@ class RailGun
 		float GetPitch();
 
 	private:
+		GLuint railgunDisplayList;
 		float yaw;
 		float pitch;
 };
