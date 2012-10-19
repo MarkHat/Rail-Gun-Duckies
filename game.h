@@ -16,11 +16,20 @@ class Game
 		static void FireDucky();
 
 	private:
+		static glm::vec3 duckyInitialPosition;
+		static glm::vec3 gunInitialPosition;
+		static GLfloat launchSpeed;
+		static GLfloat radianConversion;
+		static GLfloat gravity;
+
 		static enum Mode mode;
 
 		static Ducky * ducky;
 		static RailGun * railgun;
-		static Balloon * balloon;
+
+		static Balloon * redBalloon;
+		static Balloon * greenBalloon;
+		static Balloon * blueBalloon;
 
 		static bool debug;
 		static bool duckyFired;
@@ -29,6 +38,8 @@ class Game
 
 		static void DisplayXYZ();
 		static void DisplayDucky();
+		static void DisplayRailGun();
+		static void DisplayBalloons();
 
 		static void ResetGame();
 		static void ResetDucky();

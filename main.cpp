@@ -326,7 +326,7 @@ int main(int argc, char * argv[])
 	glLoadIdentity();
 
 	// reference: http://www.opengl.org/sdk/docs/man/xhtml/gluPerspective.xml
-	gluPerspective(45, aspect, 1, 30);
+	gluPerspective(45, aspect, 1, 100);
 	glEnable(GL_DEPTH_TEST);
 
 	wireFrame = false;

@@ -18,6 +18,18 @@ Balloon::~Balloon()
 {
 }
 
+void Balloon::SetPosition(GLfloat x, GLfloat y, GLfloat z)
+{
+	position.x = x;
+	position.y = y;
+	position.z = z;
+}
+
+glm::vec3 Balloon::GetPosition()
+{
+	return position;
+}
+
 void Balloon::ToggleDebug()
 {
 	debug = !debug;
@@ -74,22 +86,24 @@ void Balloon::ComputeVaVertices()
 		float currentY;
 		float currentRadius;
 
+		// top half
 		if (i <= (stacks + 1) / 2)
 		{
 			currentY = radius - i * heightIncrement;
-			currentRadius = sqrt(radius * radius - currentY * currentY);
+			currentRadius = glm::sqrt(radius * radius - currentY * currentY);
 		}
+		// bottom half
 		else
 		{
 			currentY = (radius - i * heightIncrement) * 1.5;
-			currentRadius = sin(pi / 2 + sinAngleIncrement * ((stacks + 1) / 2 - i)) * radius;
+			currentRadius = glm::sin(pi / 2 + sinAngleIncrement * ((stacks + 1) / 2 - i)) * radius;
 		}
 
 		for (int j = 0; j < slices + 1; j++)
 		{
-			vaVertices.push_back(cos(sliceAngleIncrement * j) * currentRadius);
+			vaVertices.push_back(glm::cos(sliceAngleIncrement * j) * currentRadius);
 			vaVertices.push_back(currentY);
-			vaVertices.push_back(sin(sliceAngleIncrement * j) * currentRadius);
+			vaVertices.push_back(glm::sin(sliceAngleIncrement * j) * currentRadius);
 		}
 	}
 }
@@ -156,7 +170,7 @@ void Balloon::ComputeVaNormals()
 				float sinAngleIncrement = pi / (stacks + 1);
 
 				vaNormals.push_back(vaVertices.at(vaIndex));
-				vaNormals.push_back(-cos(pi / 2 + sinAngleIncrement * ((stacks + 1) / 2 - i)) / 1.5);
+				vaNormals.push_back(-glm::cos(pi / 2 + sinAngleIncrement * ((stacks + 1) / 2 - i)) / 1.5);
 				vaNormals.push_back(vaVertices.at(vaIndex + 2));
 
 				int normalIndex = vaNormals.size() - 3;
@@ -176,10 +190,12 @@ void Balloon::ComputeDebugVertices()
 {
 	for (int i = 0; i < numVaVertices; i++)
 	{
+		// coordinates of the vertex
 		float vX = vaVertices.at(i * 3);
 		float vY = vaVertices.at(i * 3 + 1);
 		float vZ = vaVertices.at(i * 3 + 2);
 
+		// coordinates of the vertex plus its normal
 		float nX = vX + vaNormals.at(i * 3) * 0.2;
 		float nY = vY + vaNormals.at(i * 3 + 1) * 0.2;
 		float nZ = vZ + vaNormals.at(i * 3 + 2) * 0.2;

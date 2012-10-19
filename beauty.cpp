@@ -123,7 +123,7 @@ void Beauty::Display()
 			break;
 			
 		case BALLOON:
-			glTranslatef(0, 1, -5);
+			glTranslatef(0, 2.5, -5);
 			glRotatef(realElapsedTime * rotationSpeed, 0, 1, 0);
 			balloon->Display();
 

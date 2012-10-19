@@ -1,5 +1,5 @@
 #include <GL/freeglut.h>
-#include <math.h>
+#include <glm/glm.hpp>
 #include <vector>
 
 #pragma once
@@ -11,8 +11,12 @@ class Balloon
 	public:
 		Balloon();
 		~Balloon();
+
 		void ToggleDebug();
 		void Display();
+
+		void SetPosition(GLfloat x, GLfloat y, GLfloat z);
+		glm::vec3 GetPosition();
 
 	private:
 		bool debug;
@@ -24,6 +28,8 @@ class Balloon
 		vector<GLfloat> debugVertices;
 		vector<GLuint> debugIndices;
 		void DisplayFunc();
+
+		glm::vec3 position;
 
 		int slices;
 		int stacks;

@@ -2,8 +2,6 @@
 
 RailGun::RailGun()
 {
-	railgunDisplayList = -1;
-
 	yaw = 0;
 	pitch = 0;
 }
@@ -117,21 +115,13 @@ void DrawGun()
 
 void RailGun::Display()
 {
+	glMatrixMode(GL_MODELVIEW);
 
-	if (railgunDisplayList == -1)
-	{
-		railgunDisplayList = glGenLists(1);
-		glNewList(railgunDisplayList, GL_COMPILE);
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-		glColor3f(1, 1, 1);
-		glScalef(0.5, 0.5, 0.5);
-		DrawGun();
-		glPopMatrix();
-		glEndList();
-	}
-
-	glCallList(railgunDisplayList);
+	glPushMatrix();
+	glColor3f(1, 1, 1);
+	glScalef(0.5, 0.5, 0.5);
+	DrawGun();
+	glPopMatrix();
 }
 
 void RailGun::UpdateYaw(int mouseX, int windowWidth)
@@ -144,6 +134,13 @@ void RailGun::UpdatePitch(int mouseY, int windowHeight)
 	pitch = 45 - mouseY / (windowHeight / 45);
 }
 
+void RailGun::SetPosition(GLfloat x, GLfloat y, GLfloat z)
+{
+	position.x = x;
+	position.y = y;
+	position.z = z;
+}
+
 float RailGun::GetYaw()
 {
 	return yaw;
@@ -152,4 +149,9 @@ float RailGun::GetYaw()
 float RailGun::GetPitch()
 {
 	return pitch;
+}
+
+glm::vec3 RailGun::GetPosition()
+{
+	return position;
 }
