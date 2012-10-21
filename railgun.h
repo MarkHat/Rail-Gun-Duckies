@@ -20,6 +20,7 @@ class RailGun
 		glm::vec3 GetPosition();
 
 	private:
+		GLuint railgunDisplayList;
 		float yaw;
 		float pitch;
 		glm::vec3 position;

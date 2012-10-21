@@ -21,7 +21,7 @@ class Ducky
 		void SetVelocity(GLfloat x, GLfloat y, GLfloat z);
 
 	private:
-		GLuint displayListHandle;
+		GLuint duckyDisplayList;
 
 		glm::vec3 position;
 		glm::vec3 velocity;

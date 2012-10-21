@@ -2,6 +2,7 @@
 
 RailGun::RailGun()
 {
+	railgunDisplayList = -1;
 	yaw = 0;
 	pitch = 0;
 }
@@ -115,13 +116,20 @@ void DrawGun()
 
 void RailGun::Display()
 {
-	glMatrixMode(GL_MODELVIEW);
+	if (railgunDisplayList == -1)
+	{
+		railgunDisplayList = glGenLists(1);
+		glNewList(railgunDisplayList, GL_COMPILE);
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glColor3f(1, 1, 1);
+		glScalef(0.5, 0.5, 0.5);
+		DrawGun();
+		glPopMatrix();
+		glEndList();
+	}
 
-	glPushMatrix();
-	glColor3f(1, 1, 1);
-	glScalef(0.5, 0.5, 0.5);
-	DrawGun();
-	glPopMatrix();
+	glCallList(railgunDisplayList);
 }
 
 void RailGun::UpdateYaw(int mouseX, int windowWidth)
