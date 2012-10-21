@@ -7,6 +7,13 @@ enum Mode
 	IDLE
 };
 
+enum CameraModes
+{
+	FIXED_POSITION,
+	REORIENT,
+	FIRST_PERSON
+};
+
 glm::vec3 Game::duckyInitialPosition = glm::vec3(0, 0, -3);
 glm::vec3 Game::gunInitialPosition = glm::vec3(0, -1, -3);
 GLfloat Game::launchSpeed = 30;
@@ -14,6 +21,7 @@ GLfloat Game::radianConversion = 3.14159 / 180;
 GLfloat Game::gravity = -0.2;
 
 enum Mode Game::mode = IDLE;
+enum CameraModes Game::cameraMode = FIXED_POSITION;
 
 bool Game::debug = false;
 bool Game::duckyFired = false;
@@ -32,6 +40,27 @@ void Game::ToggleDebug()
 	debug = !debug;
 }
 
+void Game:: CycleCameraMode(){
+	
+	switch(cameraMode)
+
+	{
+		case FIXED_POSITION:
+			cameraMode = REORIENT;
+		
+			break;
+
+		case REORIENT:
+			cameraMode = FIRST_PERSON;
+			break;
+
+		case FIRST_PERSON:
+			cameraMode = FIXED_POSITION;
+			gluLookAt(0, 0, 0, 0, 0, -5, 0, 1, 0);
+			break;
+	}
+
+}
 void Game::CycleMode()
 {
 	switch (mode)
@@ -132,6 +161,7 @@ void Game::DisplayDucky()
 		glRotatef(railgun->GetPitch(), 0, 0, 1);
 		glRotatef(railgun->GetYaw(), 0, 1, 0);
 	}
+
 	else
 	{
 		GLfloat angleX = -glm::asin(duckyVelocity.x / launchSpeed) / radianConversion;
@@ -186,13 +216,27 @@ void Game::DisplayBalloons()
 }
 
 void Game::Display()
-{
+{	
 	glPushMatrix();
+	
+	if (cameraMode == FIRST_PERSON){
+
+		glm::vec3 duckyPosition = ducky->GetPosition();
+		gluLookAt(duckyPosition.x, duckyPosition.y, duckyPosition.z, duckyPosition.x, duckyPosition.y, duckyPosition.z - .5, 0, 1, 0);
+
+	}
+
+	else if (cameraMode == REORIENT){
+		
+		//Still need to implement
+		gluLookAt(0, 0, 2, 0, 0, -5, 0, 1, 0);
+
+	}
 
 	DisplayDucky();
 	DisplayRailGun();
 	//DisplayBalloons();
-
+	
 	if (debug)
 	{
 		DisplayXYZ();

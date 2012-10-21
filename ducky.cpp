@@ -32,13 +32,13 @@ void Ducky::Display()
 			// reference: http://blog.repertoiremag.com/wp-content/uploads/2010/09/rubber-ducky1.jpg
 			// body
 			glPushMatrix();
-			glScalef(2, 1, 1);
-			gluSphere(quadric, .5, 25, 25);
+			glScalef(2, 2, 2);
+			gluSphere(quadric, .25, 25, 25);
 			glPopMatrix();
 
 			// left wing
 			glPushMatrix();
-			glTranslatef(0, 0.35, -0.85);
+			glTranslatef(0, .1, -.5);
 			glRotatef(10, 1, 0, 0);
 			glScalef(0.6, 0.3, 0.2);
 			gluSphere(quadric, 1, 25, 25);
@@ -46,7 +46,7 @@ void Ducky::Display()
 
 			// right wing
 			glPushMatrix();
-			glTranslatef(0, 0.35, 0.85);
+			glTranslatef(0, 0.1, 0.5);
 			glRotatef(-10, 1, 0, 0);
 			glScalef(0.6, 0.3, 0.2);
 			gluSphere(quadric, 1, 25, 25);

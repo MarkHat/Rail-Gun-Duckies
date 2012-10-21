@@ -14,6 +14,7 @@ class Game
 		static void CycleMode();
 		static void MouseMotionFunc(int x, int y, int windowWidth, int windowHeight);
 		static void FireDucky();
+		static void CycleCameraMode();
 
 	private:
 		static glm::vec3 duckyInitialPosition;
@@ -23,6 +24,7 @@ class Game
 		static GLfloat gravity;
 
 		static enum Mode mode;
+		static enum CameraModes cameraMode;
 
 		static Ducky * ducky;
 		static RailGun * railgun;

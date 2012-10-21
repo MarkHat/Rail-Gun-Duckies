@@ -15,12 +15,7 @@ bool wireFrame;
 bool debug;
 bool paused;
 
-enum CameraModes
-{
-	FIXED_POSITION,
-	REORIENT,
-	FIRST_PERSON
-};
+
 
 enum GameModes
 {
@@ -31,26 +26,8 @@ enum GameModes
 	AUTOMATED
 };
 
-enum CameraModes cameraMode = FIXED_POSITION;
 enum GameModes gameMode = RUBBER_DUCKY_BEAUTY;
 
-void CycleCameraMode()
-{
-	switch(cameraMode)
-	{
-		case FIXED_POSITION:
-			cameraMode = REORIENT;
-			break;
-
-		case REORIENT:
-			cameraMode = FIRST_PERSON;
-			break;
-
-		case FIRST_PERSON:
-			cameraMode = FIXED_POSITION;
-			break;
-	}
-}
 
 void CycleGameMode()
 {
@@ -231,7 +208,7 @@ void KeyboardFunc(unsigned char c, int x, int y)
 
 		case 'c':
 		case 'C':
-			CycleCameraMode();
+			Game::CycleCameraMode();
 			break;
 
 		case 'd':
