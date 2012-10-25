@@ -14,6 +14,9 @@ enum CameraModes
 	FIRST_PERSON
 };
 
+int Game::windowWidth = 800;
+int Game::windowHeight = 600;
+
 glm::vec3 Game::duckyInitialPosition = glm::vec3(0, 0, -3);
 glm::vec3 Game::gunInitialPosition = glm::vec3(0, -1, -3);
 GLfloat Game::launchSpeed = 30;
@@ -42,8 +45,7 @@ void Game::ToggleDebug()
 
 void Game:: CycleCameraMode(){
 	
-	switch(cameraMode)
-
+	switch (cameraMode)
 	{
 		case FIXED_POSITION:
 			cameraMode = REORIENT;
@@ -59,8 +61,8 @@ void Game:: CycleCameraMode(){
 			gluLookAt(0, 0, 0, 0, 0, -5, 0, 1, 0);
 			break;
 	}
-
 }
+
 void Game::CycleMode()
 {
 	switch (mode)
@@ -118,12 +120,49 @@ void Game::DisplayXYZ()
 	glPopMatrix();
 }
 
+void Game::GenerateBalloons()
+{
+	GLfloat x = 0;
+	GLfloat y = 0;
+	GLfloat z = 0;
+
+	int xOffset = 15;
+	int yOffset = 5;
+	int yHeight = 5;
+	int zGunOffset = 25;
+	int zBalloonOffset = 15;
+	
+	srand(time(NULL));
+
+	for (int i = 0; i < 3; i++)
+	{
+		x = -xOffset + rand() % (xOffset * 2);
+		y = yOffset + (rand() % yHeight);
+		z = (zGunOffset + zBalloonOffset * i + rand() % zBalloonOffset) * -1;
+
+		switch (i)
+		{
+			case 0:
+				redBalloon->SetPosition(x, y, z);
+				break;
+
+			case 1:
+				greenBalloon->SetPosition(x, y, z);
+				break;
+
+			case 2:
+				blueBalloon->SetPosition(x, y, z);
+				break;
+		}
+	}
+}
+
 void Game::ResetGame()
 {
 	ResetDucky();
 	railgun->SetPosition(gunInitialPosition.x, gunInitialPosition.y, gunInitialPosition.z);
 
-	// generate balloons
+	GenerateBalloons();
 }
 
 void Game::ResetDucky()
@@ -151,6 +190,10 @@ void Game::DisplayDucky()
 {
 	glm::vec3 duckyPosition = ducky->GetPosition();
 	glm::vec3 duckyVelocity = ducky->GetVelocity();
+
+	if (duckyPosition.z < -80) {
+		ResetDucky();
+	}
 
 	glPushMatrix();
 	glTranslatef(duckyPosition.x, duckyPosition.y, duckyPosition.z);
@@ -215,27 +258,111 @@ void Game::DisplayBalloons()
 	glPopMatrix();
 }
 
+void Game::DisplayText(char * text)
+{
+	glPushMatrix();
+	glScaled(0.01, 0.01, 0.01);
+	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) text);
+	glPopMatrix();
+}
+
+void Game::DisplayBalloonText()
+{
+	glm::vec3 redPosition = redBalloon->GetPosition();
+	glm::vec3 greenPosition = greenBalloon->GetPosition();
+	glm::vec3 bluePosition = blueBalloon->GetPosition();
+
+	float radiusMultiplier = 1.25;
+	float redTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '1') * 0.005;
+	float greenTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '2') * 0.005;
+	float blueTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '3') * 0.005;
+
+	glPushMatrix();
+	glColor3f(1, 1, 1);
+
+	glPushMatrix();
+	glTranslatef(redPosition.x - redTextHalfWidth, redPosition.y + redBalloon->GetRadius() * radiusMultiplier, redPosition.z);
+	DisplayText("1");
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(greenPosition.x - greenTextHalfWidth, greenPosition.y + greenBalloon->GetRadius() * radiusMultiplier, greenPosition.z);
+	DisplayText("2");
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(bluePosition.x - blueTextHalfWidth, bluePosition.y + blueBalloon->GetRadius() * radiusMultiplier, bluePosition.z);
+	DisplayText("3");
+	glPopMatrix();
+	
+	glPopMatrix();
+}
+
+void Game::SetWindowDimensions(int width, int height)
+{
+	windowWidth = width;
+	windowHeight = height;
+}
+
+void Game::DisplayGameInfo()
+{
+	//char * scoreText = strcat("Score: ", "0");
+	//char * duckiesText = strcat("Duckies left: ", "3");
+	
+	char * scoreText = "Score: 0";
+	char * duckiesText = "Duckies left: 3";
+
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+
+	glLoadIdentity();
+	glOrtho(0, windowWidth, 0, windowHeight, 1, 10);
+	glViewport(0, 0, windowWidth, windowHeight);
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+
+	glLoadIdentity();
+	glColor3f(1, 1, 1);
+
+	glPushMatrix();
+	glTranslatef(10, 10, -5.5);
+	glScalef(0.15, 0.15, 1.0);
+	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) duckiesText);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(10, glutStrokeHeight(GLUT_STROKE_MONO_ROMAN) * 0.15 + 20, -5.5);
+	glScalef(0.15, 0.15, 1.0);
+	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) scoreText);
+	glPopMatrix();
+
+	glPopMatrix();
+
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+}
+
 void Game::Display()
 {	
 	glPushMatrix();
 	
-	if (cameraMode == FIRST_PERSON){
-
+	if (cameraMode == FIRST_PERSON) {
 		glm::vec3 duckyPosition = ducky->GetPosition();
-		gluLookAt(duckyPosition.x, duckyPosition.y, duckyPosition.z, duckyPosition.x, duckyPosition.y, duckyPosition.z - .5, 0, 1, 0);
 
+		gluLookAt(duckyPosition.x, duckyPosition.y, duckyPosition.z, duckyPosition.x, duckyPosition.y, duckyPosition.z - .5, 0, 1, 0);
 	}
 
-	else if (cameraMode == REORIENT){
-		
-		//Still need to implement
+	else if (cameraMode == REORIENT) {
 		gluLookAt(0, 0, 2, 0, 0, -5, 0, 1, 0);
-
 	}
 
 	DisplayDucky();
 	DisplayRailGun();
-	//DisplayBalloons();
+	DisplayBalloons();
+	DisplayBalloonText();
+	DisplayGameInfo();
 	
 	if (debug)
 	{

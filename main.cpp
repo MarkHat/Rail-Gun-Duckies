@@ -15,8 +15,6 @@ bool wireFrame;
 bool debug;
 bool paused;
 
-
-
 enum GameModes
 {
 	RUBBER_DUCKY_BEAUTY,
@@ -27,7 +25,6 @@ enum GameModes
 };
 
 enum GameModes gameMode = RUBBER_DUCKY_BEAUTY;
-
 
 void CycleGameMode()
 {
@@ -48,6 +45,7 @@ void CycleGameMode()
 		case BALLOON_BEAUTY:
 			Beauty::CycleMode();
 			Game::CycleMode();
+			glDisable(GL_LIGHT1);
 			gameMode = MANUAL;
 
 			break;
@@ -60,6 +58,7 @@ void CycleGameMode()
 		case AUTOMATED:
 			Beauty::CycleMode();
 			Game::CycleMode();
+			glEnable(GL_LIGHT1);
 			gameMode = RUBBER_DUCKY_BEAUTY;
 
 			break;
@@ -121,23 +120,6 @@ char * AssignGameModeText()
 	return text;
 }
 
-void DisplayText(char * text)
-{
-	glPushMatrix();
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0, windowWidth, 0, windowHeight, 1, 10);
-
-	glMatrixMode(GL_MODELVIEW);
-	glColor3f(1, 1, 1);
-	glTranslatef(10, windowHeight - glutStrokeHeight(GLUT_STROKE_MONO_ROMAN) * 0.15 - 10, -5.5);
-	glScaled(0.15, 0.15, 1.0);
-	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) text);
-
-	glPopMatrix();
-}
-
 void Display()
 {
 	glViewport(0, 0, windowWidth, windowHeight);
@@ -180,6 +162,7 @@ void ReshapeFunc(int w, int h)
 
 	windowWidth = w;
 	windowHeight = h;
+	Game::SetWindowDimensions(w, h);
 	aspect = double(w) / double(h);
 	
 	glutPostRedisplay();

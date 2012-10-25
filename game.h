@@ -1,4 +1,5 @@
 #include <GL/freeglut.h>
+#include <time.h>
 #include "ducky.h"
 #include "railgun.h"
 #include "balloon.h"
@@ -15,8 +16,15 @@ class Game
 		static void MouseMotionFunc(int x, int y, int windowWidth, int windowHeight);
 		static void FireDucky();
 		static void CycleCameraMode();
+		static void SetWindowDimensions(int width, int height);
 
 	private:
+		static int score;
+		static int duckiesLeft;
+
+		static int windowWidth;
+		static int windowHeight;
+
 		static glm::vec3 duckyInitialPosition;
 		static glm::vec3 gunInitialPosition;
 		static GLfloat launchSpeed;
@@ -42,7 +50,11 @@ class Game
 		static void DisplayDucky();
 		static void DisplayRailGun();
 		static void DisplayBalloons();
+		static void DisplayText(char * text);
+		static void DisplayBalloonText();
+		static void DisplayGameInfo();
 
+		static void GenerateBalloons();
 		static void ResetGame();
 		static void ResetDucky();
 };

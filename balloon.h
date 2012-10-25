@@ -14,11 +14,15 @@ class Balloon
 
 		void ToggleDebug();
 		void Display();
-
-		void SetPosition(GLfloat x, GLfloat y, GLfloat z);
+		
+		float GetRadius();
 		glm::vec3 GetPosition();
+		void SetPosition(GLfloat x, GLfloat y, GLfloat z);
 
 	private:
+		GLuint vaDisplayListHandle;
+		GLuint debugDisplayListHandle;
+
 		bool debug;
 
 		vector<GLfloat> vaVertices;

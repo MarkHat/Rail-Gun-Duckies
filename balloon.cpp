@@ -2,6 +2,9 @@
 
 Balloon::Balloon()
 {
+	vaDisplayListHandle = -1;
+	debugDisplayListHandle = -1;
+
 	debug = false;
 
 	slices = 50;
@@ -18,16 +21,21 @@ Balloon::~Balloon()
 {
 }
 
-void Balloon::SetPosition(GLfloat x, GLfloat y, GLfloat z)
+float Balloon::GetRadius()
 {
-	position.x = x;
-	position.y = y;
-	position.z = z;
+	return radius;
 }
 
 glm::vec3 Balloon::GetPosition()
 {
 	return position;
+}
+
+void Balloon::SetPosition(GLfloat x, GLfloat y, GLfloat z)
+{
+	position.x = x;
+	position.y = y;
+	position.z = z;
 }
 
 void Balloon::ToggleDebug()
@@ -37,40 +45,63 @@ void Balloon::ToggleDebug()
 
 void Balloon::Display()
 {
-	glMatrixMode(GL_MODELVIEW);
+	//glMatrixMode(GL_MODELVIEW);
 
-	if (vaVertices.size() == 0)
+	if (vaDisplayListHandle == -1)
 	{
+		vaDisplayListHandle = glGenLists(1);
+		glNewList(vaDisplayListHandle, GL_COMPILE);
+
 		ComputeVaVertices();
 		GenerateVaIndices();
 		ComputeVaNormals();
 
-		ComputeDebugVertices();
-		GenerateDebugIndices();
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+
+		// reference: http://www.opengl.org/sdk/docs/man/xhtml/glVertexPointer.xml
+		// reference: http://www.opengl.org/sdk/docs/man/xhtml/glNormalPointer.xml
+		glVertexPointer(3, GL_FLOAT, 0, &vaVertices[0]);
+		glNormalPointer(GL_FLOAT, 0, &vaNormals[0]);
+
+		// reference: http://www.opengl.org/sdk/docs/man/xhtml/glDrawElements.xml
+		glDrawElements(GL_TRIANGLES, numVaIndices, GL_UNSIGNED_INT, &vaIndices[0]);
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+
+		glEndList();
 	}
 
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_NORMAL_ARRAY);
-
-	// reference: http://www.opengl.org/sdk/docs/man/xhtml/glVertexPointer.xml
-	// reference: http://www.opengl.org/sdk/docs/man/xhtml/glNormalPointer.xml
-	glVertexPointer(3, GL_FLOAT, 0, &vaVertices[0]);
-	glNormalPointer(GL_FLOAT, 0, &vaNormals[0]);
-
-	// reference: http://www.opengl.org/sdk/docs/man/xhtml/glDrawElements.xml
-	glDrawElements(GL_TRIANGLES, numVaIndices, GL_UNSIGNED_INT, &vaIndices[0]);
-	
-	if (debug)
+	if (debugDisplayListHandle == -1)
 	{
+		debugDisplayListHandle = glGenLists(1);
+		glNewList(debugDisplayListHandle, GL_COMPILE);
+
+		ComputeDebugVertices();
+		GenerateDebugIndices();
+
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glEnableClientState(GL_NORMAL_ARRAY);
+		
 		glColor3f(1, 1, 1);
 		glDisable(GL_LIGHTING);
 		glVertexPointer(3, GL_FLOAT, 0, &debugVertices[0]);
 		glDrawElements(GL_LINES, numDebugVertices, GL_UNSIGNED_INT, &debugIndices[0]);
 		glEnable(GL_LIGHTING);
+
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glDisableClientState(GL_NORMAL_ARRAY);
+
+		glEndList();
 	}
 
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
+	glCallList(vaDisplayListHandle);
+
+	if (debug)
+	{
+		glCallList(debugDisplayListHandle);
+	}
 }
 
 void Balloon::ComputeVaVertices()
