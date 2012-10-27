@@ -41,6 +41,11 @@ Balloon * Game::blueBalloon = new Balloon();
 void Game::ToggleDebug()
 {
 	debug = !debug;
+
+	ducky->ToggleDebug();
+	redBalloon->ToggleDebug();
+	greenBalloon->ToggleDebug();
+	blueBalloon->ToggleDebug();
 }
 
 void Game:: CycleCameraMode(){
@@ -188,7 +193,7 @@ void Game::Update()
 
 void Game::DisplayDucky()
 {
-	glm::vec3 duckyPosition = ducky->GetPosition();
+	glm::vec3 duckyPosition = ducky->GetNewPosition();
 	glm::vec3 duckyVelocity = ducky->GetVelocity();
 
 	if (duckyPosition.z < -80) {
@@ -344,19 +349,23 @@ void Game::DisplayGameInfo()
 	glMatrixMode(GL_MODELVIEW);
 }
 
-void Game::Display()
+void Game::SetCamera()
 {	
-	glPushMatrix();
-	
 	if (cameraMode == FIRST_PERSON) {
-		glm::vec3 duckyPosition = ducky->GetPosition();
+		glm::vec3 duckyPosition = ducky->GetNewPosition();
 
 		gluLookAt(duckyPosition.x, duckyPosition.y, duckyPosition.z, duckyPosition.x, duckyPosition.y, duckyPosition.z - .5, 0, 1, 0);
 	}
-
 	else if (cameraMode == REORIENT) {
 		gluLookAt(0, 0, 2, 0, 0, -5, 0, 1, 0);
 	}
+}
+
+void Game::Display()
+{	
+	glPushMatrix();
+
+	SetCamera();
 
 	DisplayDucky();
 	DisplayRailGun();

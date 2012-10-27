@@ -197,6 +197,7 @@ void KeyboardFunc(unsigned char c, int x, int y)
 		case 'd':
 		case 'D':
 			Beauty::ToggleDebug();
+			Game::ToggleDebug();
 			break;
 
 		case 'p':

@@ -3,13 +3,17 @@
 Balloon::Balloon()
 {
 	vaDisplayListHandle = -1;
-	debugDisplayListHandle = -1;
+	normalDisplayListHandle = -1;
+	boundingBoxDisplayListHandle = -1;
 
 	debug = false;
 
 	slices = 50;
 	stacks = 50;
 	radius = 2;
+
+	position = glm::vec3(0, 0, 0);
+	bounds = glm::vec3(radius * 2, radius * 2.5, radius * 2);
 
 	numVaVertices = (slices + 1) * (stacks + 1);
 	numVaIndices = (slices + 1) * (stacks) * 6;
@@ -43,64 +47,144 @@ void Balloon::ToggleDebug()
 	debug = !debug;
 }
 
+void Balloon::CreateBalloonDisplayList()
+{
+	vaDisplayListHandle = glGenLists(1);
+	glNewList(vaDisplayListHandle, GL_COMPILE);
+
+	ComputeVaVertices();
+	GenerateVaIndices();
+	ComputeVaNormals();
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+
+	// reference: http://www.opengl.org/sdk/docs/man/xhtml/glVertexPointer.xml
+	// reference: http://www.opengl.org/sdk/docs/man/xhtml/glNormalPointer.xml
+	glVertexPointer(3, GL_FLOAT, 0, &vaVertices[0]);
+	glNormalPointer(GL_FLOAT, 0, &vaNormals[0]);
+
+	// reference: http://www.opengl.org/sdk/docs/man/xhtml/glDrawElements.xml
+	glDrawElements(GL_TRIANGLES, numVaIndices, GL_UNSIGNED_INT, &vaIndices[0]);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+
+	glEndList();
+}
+
+void Balloon::CreateNormalDisplayList()
+{
+	normalDisplayListHandle = glGenLists(1);
+	glNewList(normalDisplayListHandle, GL_COMPILE);
+
+	ComputeDebugVertices();
+	GenerateDebugIndices();
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+		
+	glColor3f(1, 1, 1);
+	glDisable(GL_LIGHTING);
+	glVertexPointer(3, GL_FLOAT, 0, &debugVertices[0]);
+	glDrawElements(GL_LINES, numDebugVertices, GL_UNSIGNED_INT, &debugIndices[0]);
+	glEnable(GL_LIGHTING);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+
+	glEndList();
+}
+
+void Balloon::CreateBoundingBoxDisplayList()
+{
+	boundingBoxDisplayListHandle = glGenLists(1);
+	glNewList(boundingBoxDisplayListHandle, GL_COMPILE);
+	glPushMatrix();
+
+	// the ducky's bounding box is just a rectangular prism surrounding the duck, so I'm
+	// simply computing each vertex manually
+	glm::vec3 halfBounds = glm::vec3(bounds.x / 2, bounds.y / 2, bounds.z / 2);
+	float halfRadius = radius / 2;
+	float quarterRadius = radius / 4;
+
+	glm::vec3 boxVertices[8] = {
+		// top half of the box
+		glm::vec3(-halfBounds.x, halfBounds.y - quarterRadius, -halfBounds.z),
+		glm::vec3(-halfBounds.x, halfBounds.y - quarterRadius, halfBounds.z),
+		glm::vec3(halfBounds.x, halfBounds.y - quarterRadius, halfBounds.z),
+		glm::vec3(halfBounds.x, halfBounds.y - quarterRadius, -halfBounds.z),
+
+		// bottom half of the box
+		glm::vec3(-halfBounds.x, -halfBounds.y - quarterRadius, -halfBounds.z),
+		glm::vec3(-halfBounds.x, -halfBounds.y - quarterRadius, halfBounds.z),
+		glm::vec3(halfBounds.x, -halfBounds.y - quarterRadius, halfBounds.z),
+		glm::vec3(halfBounds.x, -halfBounds.y - quarterRadius, -halfBounds.z)
+	};
+
+	glColor3f(1, 1, 1);
+	glBegin(GL_LINES);
+
+	// top
+	glVertex3f(boxVertices[0].x, boxVertices[0].y, boxVertices[0].z);
+	glVertex3f(boxVertices[1].x, boxVertices[1].y, boxVertices[1].z);
+	glVertex3f(boxVertices[1].x, boxVertices[1].y, boxVertices[1].z);
+	glVertex3f(boxVertices[2].x, boxVertices[2].y, boxVertices[2].z);
+	glVertex3f(boxVertices[2].x, boxVertices[2].y, boxVertices[2].z);
+	glVertex3f(boxVertices[3].x, boxVertices[3].y, boxVertices[3].z);
+	glVertex3f(boxVertices[3].x, boxVertices[3].y, boxVertices[3].z);
+	glVertex3f(boxVertices[0].x, boxVertices[0].y, boxVertices[0].z);
+
+	// front
+	glVertex3f(boxVertices[3].x, boxVertices[3].y, boxVertices[3].z);
+	glVertex3f(boxVertices[7].x, boxVertices[7].y, boxVertices[7].z);
+	glVertex3f(boxVertices[4].x, boxVertices[4].y, boxVertices[4].z);
+	glVertex3f(boxVertices[0].x, boxVertices[0].y, boxVertices[0].z);
+
+	// back
+	glVertex3f(boxVertices[1].x, boxVertices[1].y, boxVertices[1].z);
+	glVertex3f(boxVertices[5].x, boxVertices[5].y, boxVertices[5].z);
+	glVertex3f(boxVertices[6].x, boxVertices[6].y, boxVertices[6].z);
+	glVertex3f(boxVertices[2].x, boxVertices[2].y, boxVertices[2].z);
+
+	// bottom
+	glVertex3f(boxVertices[4].x, boxVertices[4].y, boxVertices[4].z);
+	glVertex3f(boxVertices[5].x, boxVertices[5].y, boxVertices[5].z);
+	glVertex3f(boxVertices[5].x, boxVertices[5].y, boxVertices[5].z);
+	glVertex3f(boxVertices[6].x, boxVertices[6].y, boxVertices[6].z);
+	glVertex3f(boxVertices[6].x, boxVertices[6].y, boxVertices[6].z);
+	glVertex3f(boxVertices[7].x, boxVertices[7].y, boxVertices[7].z);
+	glVertex3f(boxVertices[7].x, boxVertices[7].y, boxVertices[7].z);
+	glVertex3f(boxVertices[4].x, boxVertices[4].y, boxVertices[4].z);
+
+	glEnd();
+	glPopMatrix();
+	glEndList();
+}
+
 void Balloon::Display()
 {
-	//glMatrixMode(GL_MODELVIEW);
-
 	if (vaDisplayListHandle == -1)
 	{
-		vaDisplayListHandle = glGenLists(1);
-		glNewList(vaDisplayListHandle, GL_COMPILE);
-
-		ComputeVaVertices();
-		GenerateVaIndices();
-		ComputeVaNormals();
-
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_NORMAL_ARRAY);
-
-		// reference: http://www.opengl.org/sdk/docs/man/xhtml/glVertexPointer.xml
-		// reference: http://www.opengl.org/sdk/docs/man/xhtml/glNormalPointer.xml
-		glVertexPointer(3, GL_FLOAT, 0, &vaVertices[0]);
-		glNormalPointer(GL_FLOAT, 0, &vaNormals[0]);
-
-		// reference: http://www.opengl.org/sdk/docs/man/xhtml/glDrawElements.xml
-		glDrawElements(GL_TRIANGLES, numVaIndices, GL_UNSIGNED_INT, &vaIndices[0]);
-
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
-
-		glEndList();
+		CreateBalloonDisplayList();
 	}
 
-	if (debugDisplayListHandle == -1)
+	if (normalDisplayListHandle == -1)
 	{
-		debugDisplayListHandle = glGenLists(1);
-		glNewList(debugDisplayListHandle, GL_COMPILE);
+		CreateNormalDisplayList();
+	}
 
-		ComputeDebugVertices();
-		GenerateDebugIndices();
-
-		glEnableClientState(GL_VERTEX_ARRAY);
-		glEnableClientState(GL_NORMAL_ARRAY);
-		
-		glColor3f(1, 1, 1);
-		glDisable(GL_LIGHTING);
-		glVertexPointer(3, GL_FLOAT, 0, &debugVertices[0]);
-		glDrawElements(GL_LINES, numDebugVertices, GL_UNSIGNED_INT, &debugIndices[0]);
-		glEnable(GL_LIGHTING);
-
-		glDisableClientState(GL_VERTEX_ARRAY);
-		glDisableClientState(GL_NORMAL_ARRAY);
-
-		glEndList();
+	if (boundingBoxDisplayListHandle == -1)
+	{
+		CreateBoundingBoxDisplayList();
 	}
 
 	glCallList(vaDisplayListHandle);
 
 	if (debug)
 	{
-		glCallList(debugDisplayListHandle);
+		glCallList(normalDisplayListHandle);
+		glCallList(boundingBoxDisplayListHandle);
 	}
 }
 

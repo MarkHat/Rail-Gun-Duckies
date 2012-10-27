@@ -46,6 +46,8 @@ class Game
 		static double oldElapsedTime;
 		static double newElapsedTime;
 
+		static void SetCamera();
+
 		static void DisplayXYZ();
 		static void DisplayDucky();
 		static void DisplayRailGun();

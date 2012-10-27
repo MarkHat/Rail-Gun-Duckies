@@ -21,7 +21,8 @@ class Balloon
 
 	private:
 		GLuint vaDisplayListHandle;
-		GLuint debugDisplayListHandle;
+		GLuint normalDisplayListHandle;
+		GLuint boundingBoxDisplayListHandle;
 
 		bool debug;
 
@@ -31,13 +32,13 @@ class Balloon
 
 		vector<GLfloat> debugVertices;
 		vector<GLuint> debugIndices;
-		void DisplayFunc();
-
-		glm::vec3 position;
 
 		int slices;
 		int stacks;
 		float radius;
+
+		glm::vec3 position;
+		glm::vec3 bounds;
 
 		int numVaVertices;
 		int numVaIndices;
@@ -56,4 +57,8 @@ class Balloon
 		void ComputeVertices();
 		void GenerateIndices();
 		void ComputeNormals();
+
+		void CreateBalloonDisplayList();
+		void CreateNormalDisplayList();
+		void CreateBoundingBoxDisplayList();
 };

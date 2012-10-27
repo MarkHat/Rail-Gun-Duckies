@@ -15,14 +15,26 @@ class Ducky
 		void Update(double elapsedTime, GLfloat gravity);
 		void Display();
 
-		glm::vec3 GetPosition();
+		glm::vec3 GetOldPosition();
+		glm::vec3 GetNewPosition();
 		glm::vec3 GetVelocity();
+		glm::vec3 GetBounds();
+
+		void ToggleDebug();
 		void SetPosition(GLfloat x, GLfloat y, GLfloat z);
 		void SetVelocity(GLfloat x, GLfloat y, GLfloat z);
 
 	private:
-		GLuint duckyDisplayList;
+		bool debug;
 
-		glm::vec3 position;
+		GLuint duckyDisplayListHandle;
+		GLuint boundingBoxDisplayListHandle;
+
+		glm::vec3 oldPosition;
+		glm::vec3 newPosition;
 		glm::vec3 velocity;
+		glm::vec3 bounds;
+
+		void CreateDuckyDisplayList();
+		void CreateBoundingBoxDisplayList();
 };

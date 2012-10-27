@@ -26,6 +26,7 @@ void Beauty::ToggleDebug()
 {
 	debug = !debug;
 
+	ducky->ToggleDebug();
 	balloon->ToggleDebug();
 	pedestal->ToggleDebug();
 }
