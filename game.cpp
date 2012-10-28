@@ -14,6 +14,9 @@ enum CameraModes
 	FIRST_PERSON
 };
 
+int Game::score = 0;
+int Game::duckiesLeft = 3;
+
 int Game::windowWidth = 800;
 int Game::windowHeight = 600;
 
@@ -48,7 +51,7 @@ void Game::ToggleDebug()
 	blueBalloon->ToggleDebug();
 }
 
-void Game:: CycleCameraMode(){
+void Game::CycleCameraMode(){
 	
 	switch (cameraMode)
 	{
@@ -166,8 +169,10 @@ void Game::ResetGame()
 {
 	ResetDucky();
 	railgun->SetPosition(gunInitialPosition.x, gunInitialPosition.y, gunInitialPosition.z);
-
 	GenerateBalloons();
+
+	score = 0;
+	duckiesLeft = 3;
 }
 
 void Game::ResetDucky()
@@ -188,6 +193,20 @@ void Game::Update()
 		double difference = newElapsedTime - oldElapsedTime;
 
 		ducky->Update(difference, gravity);
+		
+		// destroy the ducky when it passes a certain z distance
+		if (ducky->GetNewPosition().z < -80) {
+			duckiesLeft--;
+
+			if (duckiesLeft == 0)
+			{
+				ResetGame();
+			}
+			else
+			{
+				ResetDucky();
+			}
+		}
 	}
 }
 
@@ -195,10 +214,6 @@ void Game::DisplayDucky()
 {
 	glm::vec3 duckyPosition = ducky->GetNewPosition();
 	glm::vec3 duckyVelocity = ducky->GetVelocity();
-
-	if (duckyPosition.z < -80) {
-		ResetDucky();
-	}
 
 	glPushMatrix();
 	glTranslatef(duckyPosition.x, duckyPosition.y, duckyPosition.z);
@@ -209,7 +224,6 @@ void Game::DisplayDucky()
 		glRotatef(railgun->GetPitch(), 0, 0, 1);
 		glRotatef(railgun->GetYaw(), 0, 1, 0);
 	}
-
 	else
 	{
 		GLfloat angleX = -glm::asin(duckyVelocity.x / launchSpeed) / radianConversion;
@@ -309,13 +323,20 @@ void Game::SetWindowDimensions(int width, int height)
 	windowHeight = height;
 }
 
+char * Game::ConvertToString(int value)
+{
+	char text[8];
+	
+	// note: this was the easiest way I could find to convert an integer to a string
+	sprintf(text, "%d", value);
+
+	return text;
+}
+
 void Game::DisplayGameInfo()
 {
-	//char * scoreText = strcat("Score: ", "0");
-	//char * duckiesText = strcat("Duckies left: ", "3");
-	
-	char * scoreText = "Score: 0";
-	char * duckiesText = "Duckies left: 3";
+	char scoreText[255] = "Score: ";
+	char duckiesText[255] = "Duckies left: ";
 
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
@@ -333,13 +354,13 @@ void Game::DisplayGameInfo()
 	glPushMatrix();
 	glTranslatef(10, 10, -5.5);
 	glScalef(0.15, 0.15, 1.0);
-	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) duckiesText);
+	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) strcat(duckiesText, ConvertToString(duckiesLeft)));
 	glPopMatrix();
 
 	glPushMatrix();
 	glTranslatef(10, glutStrokeHeight(GLUT_STROKE_MONO_ROMAN) * 0.15 + 20, -5.5);
 	glScalef(0.15, 0.15, 1.0);
-	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) scoreText);
+	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) strcat(scoreText, ConvertToString(score)));
 	glPopMatrix();
 
 	glPopMatrix();

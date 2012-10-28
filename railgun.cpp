@@ -3,8 +3,13 @@
 RailGun::RailGun()
 {
 	railgunDisplayList = -1;
+
 	yaw = 0;
 	pitch = 0;
+	yawRange = 75;
+	pitchRange = 45;
+
+	position = glm::vec3(0, 0, 0);
 }
 
 RailGun::~RailGun()
@@ -134,12 +139,12 @@ void RailGun::Display()
 
 void RailGun::UpdateYaw(int mouseX, int windowWidth)
 {
-	yaw = -(mouseX - windowWidth / 2) / (windowWidth / 75);
+	yaw = -(mouseX - windowWidth / 2) / (windowWidth / yawRange);
 }
 
 void RailGun::UpdatePitch(int mouseY, int windowHeight)
 {
-	pitch = 45 - mouseY / (windowHeight / 45);
+	pitch = pitchRange - mouseY / (windowHeight / pitchRange);
 }
 
 void RailGun::SetPosition(GLfloat x, GLfloat y, GLfloat z)

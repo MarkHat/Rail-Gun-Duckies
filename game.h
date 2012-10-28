@@ -1,5 +1,7 @@
 #include <GL/freeglut.h>
 #include <time.h>
+#include <stdio.h>
+
 #include "ducky.h"
 #include "railgun.h"
 #include "balloon.h"
@@ -47,6 +49,7 @@ class Game
 		static double newElapsedTime;
 
 		static void SetCamera();
+		static char * ConvertToString(int value);
 
 		static void DisplayXYZ();
 		static void DisplayDucky();

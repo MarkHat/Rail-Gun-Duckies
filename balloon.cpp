@@ -122,6 +122,7 @@ void Balloon::CreateBoundingBoxDisplayList()
 		glm::vec3(halfBounds.x, -halfBounds.y - quarterRadius, -halfBounds.z)
 	};
 
+	glDisable(GL_LIGHTING);
 	glColor3f(1, 1, 1);
 	glBegin(GL_LINES);
 
@@ -159,6 +160,7 @@ void Balloon::CreateBoundingBoxDisplayList()
 
 	glEnd();
 	glPopMatrix();
+	glEnable(GL_LIGHTING);
 	glEndList();
 }
 

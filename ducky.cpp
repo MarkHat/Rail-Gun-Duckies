@@ -119,6 +119,7 @@ void Ducky::CreateBoundingBoxDisplayList()
 		glm::vec3(halfBounds.x, -halfBounds.y, -halfBounds.z)
 	};
 
+	glDisable(GL_LIGHTING);
 	glColor3f(1, 1, 1);
 	glBegin(GL_LINES);
 
@@ -132,18 +133,6 @@ void Ducky::CreateBoundingBoxDisplayList()
 	glVertex3f(boxVertices[3].x, boxVertices[3].y, boxVertices[3].z);
 	glVertex3f(boxVertices[0].x, boxVertices[0].y, boxVertices[0].z);
 
-	// front
-	glVertex3f(boxVertices[3].x, boxVertices[3].y, boxVertices[3].z);
-	glVertex3f(boxVertices[7].x, boxVertices[7].y, boxVertices[7].z);
-	glVertex3f(boxVertices[4].x, boxVertices[4].y, boxVertices[4].z);
-	glVertex3f(boxVertices[0].x, boxVertices[0].y, boxVertices[0].z);
-
-	// back
-	glVertex3f(boxVertices[1].x, boxVertices[1].y, boxVertices[1].z);
-	glVertex3f(boxVertices[5].x, boxVertices[5].y, boxVertices[5].z);
-	glVertex3f(boxVertices[6].x, boxVertices[6].y, boxVertices[6].z);
-	glVertex3f(boxVertices[2].x, boxVertices[2].y, boxVertices[2].z);
-
 	// bottom
 	glVertex3f(boxVertices[4].x, boxVertices[4].y, boxVertices[4].z);
 	glVertex3f(boxVertices[5].x, boxVertices[5].y, boxVertices[5].z);
@@ -154,8 +143,19 @@ void Ducky::CreateBoundingBoxDisplayList()
 	glVertex3f(boxVertices[7].x, boxVertices[7].y, boxVertices[7].z);
 	glVertex3f(boxVertices[4].x, boxVertices[4].y, boxVertices[4].z);
 
+	// vertical lines
+	glVertex3f(boxVertices[3].x, boxVertices[3].y, boxVertices[3].z);
+	glVertex3f(boxVertices[7].x, boxVertices[7].y, boxVertices[7].z);
+	glVertex3f(boxVertices[4].x, boxVertices[4].y, boxVertices[4].z);
+	glVertex3f(boxVertices[0].x, boxVertices[0].y, boxVertices[0].z);
+	glVertex3f(boxVertices[1].x, boxVertices[1].y, boxVertices[1].z);
+	glVertex3f(boxVertices[5].x, boxVertices[5].y, boxVertices[5].z);
+	glVertex3f(boxVertices[6].x, boxVertices[6].y, boxVertices[6].z);
+	glVertex3f(boxVertices[2].x, boxVertices[2].y, boxVertices[2].z);
+
 	glEnd();
 	glPopMatrix();
+	glEnable(GL_LIGHTING);
 	glEndList();
 }
 

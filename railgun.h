@@ -21,7 +21,11 @@ class RailGun
 
 	private:
 		GLuint railgunDisplayList;
+
 		float yaw;
 		float pitch;
+		int yawRange;
+		int pitchRange;
+
 		glm::vec3 position;
 };
