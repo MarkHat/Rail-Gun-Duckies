@@ -5,12 +5,24 @@
 #include "beauty.h"
 #include "game.h"
 
+const int FPS = 60;
+const int PERIOD = 1000 / FPS;
+
+const GLfloat TEXT_SIZE = 0.12;
+const glm::vec3 MODE_TEXT_POSITION = glm::vec3(10, 10, -1);
+const glm::vec3 PAUSED_TEXT_POSITION = glm::vec3(10, 35, -1);
+
+const char * RUBBER_DUCKY_BEAUTY_TEXT = "Rubber Ducky Beauty Mode";
+const char * RAILGUN_BEAUTY_TEXT = "Railgun Beauty Mode";
+const char * BALLOON_BEAUTY_TEXT = "Balloon Beauty Mode";
+const char * MANUAL_TEXT = "Manual Mode";
+const char * AUTOMATED_TEXT = "Automated Mode";
+const char * PAUSED_TEXT = "(paused)";
+
 int windowWidth = 800;
 int windowHeight = 600;
 double aspect = double(windowWidth) / double(windowHeight);
 
-const int fps = 60;
-const int period = 1000 / fps;
 bool wireFrame;
 bool debug;
 bool paused;
@@ -64,10 +76,11 @@ void CycleGameMode()
 	}
 }
 
-void DisplayText(char * text, int fromLeft, int fromTop)
+void DisplayText(const char * text, glm::vec3 textPosition)
 {
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
+	glDisable(GL_LIGHTING);
 
 	glLoadIdentity();
 	glOrtho(0, windowWidth, 0, windowHeight, 1, 10);
@@ -78,10 +91,11 @@ void DisplayText(char * text, int fromLeft, int fromTop)
 
 	glLoadIdentity();
 	glColor3f(1, 1, 1);
-	glTranslatef(fromLeft, windowHeight - glutStrokeHeight(GLUT_STROKE_MONO_ROMAN) * 0.15 - fromTop, -5.5);
-	glScaled(0.15, 0.15, 1.0);
+	glTranslatef(textPosition.x, windowHeight - glutStrokeHeight(GLUT_STROKE_MONO_ROMAN) * TEXT_SIZE - textPosition.y, textPosition.z);
+	glScaled(TEXT_SIZE, TEXT_SIZE, 1.0);
 	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) text);
 
+	glEnable(GL_LIGHTING);
 	glPopMatrix();
 
 	glMatrixMode(GL_PROJECTION);
@@ -89,34 +103,34 @@ void DisplayText(char * text, int fromLeft, int fromTop)
 	glMatrixMode(GL_MODELVIEW);
 }
 
-char * AssignGameModeText()
+const char * AssignGameModeText()
 {
-	char * text;
+	const char * TEXT;
 
 	switch (gameMode)
 	{
 		case RUBBER_DUCKY_BEAUTY:
-			text = "Rubber Ducky Beauty Mode";
+			TEXT = RUBBER_DUCKY_BEAUTY_TEXT;
 			break;
 
 		case RAIL_GUN_BEAUTY:
-			text = "Rail Gun Beauty Mode";
+			TEXT = RAILGUN_BEAUTY_TEXT;
 			break;
 
 		case BALLOON_BEAUTY:
-			text = "Balloon Beauty Mode";
+			TEXT = BALLOON_BEAUTY_TEXT;
 			break;
 
 		case MANUAL:
-			text = "Manual Mode";
+			TEXT = MANUAL_TEXT;
 			break;
 
 		case AUTOMATED:
-			text = "Automated Mode";
+			TEXT = AUTOMATED_TEXT;
 			break;
 	}
 
-	return text;
+	return TEXT;
 }
 
 void Display()
@@ -140,12 +154,12 @@ void Display()
 			break;
 	}
 
-	char * text = AssignGameModeText();
-	DisplayText(text, 10, 10);
+	const char * TEXT = AssignGameModeText();
+	DisplayText(TEXT, MODE_TEXT_POSITION);
 
 	if (paused)
 	{
-		DisplayText("(paused)", 10, 40);
+		DisplayText(PAUSED_TEXT, PAUSED_TEXT_POSITION);
 	}
 
 	glutSwapBuffers();
@@ -161,9 +175,10 @@ void ReshapeFunc(int w, int h)
 
 	windowWidth = w;
 	windowHeight = h;
-	Game::SetWindowDimensions(w, h);
 	aspect = double(w) / double(h);
 	
+	Game::SetWindowDimensions(w, h);
+
 	glutPostRedisplay();
 }
 
@@ -238,7 +253,7 @@ void TimerFunc(int value)
 			break;
 	}
 
-	glutTimerFunc(period, TimerFunc, value);
+	glutTimerFunc(PERIOD, TimerFunc, value);
 	glutPostRedisplay();
 }
 
@@ -301,7 +316,7 @@ int main(int argc, char * argv[])
 	glutDisplayFunc(Display); 
 	glutReshapeFunc(ReshapeFunc);
 	glutKeyboardFunc(KeyboardFunc);
-	glutTimerFunc(period, TimerFunc, 0);
+	glutTimerFunc(PERIOD, TimerFunc, 0);
 
 	// reference: http://www.opengl.org/resources/libraries/glut/spec3/node54.html
 	glutSpecialFunc(SpecialFunc);
