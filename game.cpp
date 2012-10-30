@@ -20,8 +20,8 @@ int Game::duckiesLeft = 3;
 int Game::windowWidth = 800;
 int Game::windowHeight = 600;
 
-glm::vec3 Game::duckyInitialPosition = glm::vec3(0, 0, -3);
-glm::vec3 Game::gunInitialPosition = glm::vec3(0, -1, -3);
+glm::vec3 Game::duckyInitialPosition = glm::vec3(0, 0, -4);
+glm::vec3 Game::gunInitialPosition = glm::vec3(0, -1, -4);
 GLfloat Game::launchSpeed = 30;
 GLfloat Game::radianConversion = 3.14159 / 180;
 GLfloat Game::gravity = -0.2;
@@ -41,6 +41,10 @@ Balloon * Game::redBalloon = new Balloon();
 Balloon * Game::greenBalloon = new Balloon();
 Balloon * Game::blueBalloon = new Balloon();
 
+bool Game::redHit = false;
+bool Game::greenHit = false;
+bool Game::blueHit = false;
+
 void Game::ToggleDebug()
 {
 	debug = !debug;
@@ -57,7 +61,6 @@ void Game::CycleCameraMode(){
 	{
 		case FIXED_POSITION:
 			cameraMode = REORIENT;
-		
 			break;
 
 		case REORIENT:
@@ -66,7 +69,6 @@ void Game::CycleCameraMode(){
 
 		case FIRST_PERSON:
 			cameraMode = FIXED_POSITION;
-			gluLookAt(0, 0, 0, 0, 0, -5, 0, 1, 0);
 			break;
 	}
 }
@@ -169,7 +171,7 @@ void Game::ResetGame()
 {
 	ResetDucky();
 	railgun->SetPosition(gunInitialPosition.x, gunInitialPosition.y, gunInitialPosition.z);
-	GenerateBalloons();
+	ResetBalloons();
 
 	score = 0;
 	duckiesLeft = 3;
@@ -183,29 +185,141 @@ void Game::ResetDucky()
 	duckyFired = false;
 }
 
+void Game::ResetBalloons()
+{
+	GenerateBalloons();
+
+	redHit = false;
+	greenHit = false;
+	blueHit = false;
+}
+
+bool Game::CheckDuckyBalloonCollision(glm::vec3 duckyTempPosition, Balloon * balloon) 
+{
+	glm::vec3 balloonPosition = balloon->GetPosition();
+
+	float xDifference = glm::abs(balloonPosition.x - duckyTempPosition.x);
+	float yDifference = glm::abs(balloonPosition.y - duckyTempPosition.y);
+	float zDifference = glm::abs(balloonPosition.z - duckyTempPosition.z);
+
+	glm::vec3 duckyBounds = ducky->GetBounds();
+	glm::vec3 balloonBounds = balloon->GetBounds();
+
+	if (xDifference < duckyBounds.x / 2 + balloonBounds.x / 2 &&
+		yDifference < duckyBounds.y / 2 + balloonBounds.y / 2 &&
+		zDifference < duckyBounds.z / 2 + balloonBounds.z / 2)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+void Game::HandleCollisions()
+{
+	// destroy the ducky when it passes a certain z distance
+	if (ducky->GetNewPosition().z < -80) {
+		duckiesLeft--;
+
+		if (duckiesLeft == 0)
+		{
+			ResetGame();
+		}
+		else
+		{
+			ResetDucky();
+		}
+	}
+	else
+	{
+		glm::vec3 duckyOldPosition = ducky->GetOldPosition();
+		glm::vec3 duckyNewPosition = ducky->GetNewPosition();
+		int timeSegments = 10;
+
+		float xIncrement = (duckyNewPosition.x - duckyOldPosition.x) / timeSegments;
+		float zIncrement = (duckyNewPosition.z - duckyOldPosition.z) / timeSegments;
+
+		glm::vec3 duckyTempPosition = duckyOldPosition;
+
+		for (int i = 0; i < timeSegments; i++)
+		{
+			duckyTempPosition.x += xIncrement;
+			duckyTempPosition.z += zIncrement;
+
+			if (!redHit && CheckDuckyBalloonCollision(duckyTempPosition, redBalloon))
+			{
+				score += 1;
+				redHit = true;
+
+				ResetDucky();
+			}
+			else if (!greenHit && CheckDuckyBalloonCollision(duckyTempPosition, greenBalloon))
+			{
+				score += 2;
+				greenHit = true;
+
+				ResetDucky();
+			}
+			else if (!blueHit && CheckDuckyBalloonCollision(duckyTempPosition, blueBalloon))
+			{
+				score += 3;
+				blueHit = true;
+
+				ResetDucky();
+			}
+		}
+	}
+}
+
+void Game::AutomateRailgun()
+{
+	glm::vec3 railgunPosition = railgun->GetPosition();
+	glm::vec3 targetPosition;
+
+	if (!redHit)
+	{
+		targetPosition = redBalloon->GetPosition();
+	}
+	else if (!greenHit)
+	{
+		targetPosition = greenBalloon->GetPosition();
+	}
+	else if (!blueHit)
+	{
+		targetPosition = blueBalloon->GetPosition();
+	}
+
+	float xDifference = targetPosition.x - railgunPosition.x;
+	float yDifference = targetPosition.y - railgunPosition.y;
+	float zDifference = targetPosition.z - railgunPosition.z;
+
+	float yaw = glm::tan(xDifference / zDifference) / radianConversion;
+	railgun->SetYaw(yaw);
+
+	FireDucky();
+}
+
 void Game::Update()
 {
 	oldElapsedTime = newElapsedTime;
 	newElapsedTime = (double) glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+
+	if (mode == AUTOMATED)
+	{
+		AutomateRailgun();
+	}
 
 	if (duckyFired)
 	{
 		double difference = newElapsedTime - oldElapsedTime;
 
 		ducky->Update(difference, gravity);
-		
-		// destroy the ducky when it passes a certain z distance
-		if (ducky->GetNewPosition().z < -80) {
-			duckiesLeft--;
+		HandleCollisions();
 
-			if (duckiesLeft == 0)
-			{
-				ResetGame();
-			}
-			else
-			{
-				ResetDucky();
-			}
+		// check if new balloons should be generated
+		if (redHit && greenHit && blueHit)
+		{
+			ResetBalloons();
 		}
 	}
 }
@@ -258,23 +372,32 @@ void Game::DisplayBalloons()
 	glm::vec3 greenPosition = greenBalloon->GetPosition();
 	glm::vec3 bluePosition = blueBalloon->GetPosition();
 
-	glPushMatrix();
-	glTranslatef(redPosition.x, redPosition.y, redPosition.z);
-	glColor3f(1, 0, 0);
-	redBalloon->Display();
-	glPopMatrix();
+	if (!redHit)
+	{
+		glPushMatrix();
+		glTranslatef(redPosition.x, redPosition.y, redPosition.z);
+		glColor3f(1, 0, 0);
+		redBalloon->Display();
+		glPopMatrix();
+	}
 
-	glPushMatrix();
-	glTranslatef(greenPosition.x, greenPosition.y, greenPosition.z);
-	glColor3f(0, 1, 0);
-	greenBalloon->Display();
-	glPopMatrix();
+	if (!greenHit)
+	{
+		glPushMatrix();
+		glTranslatef(greenPosition.x, greenPosition.y, greenPosition.z);
+		glColor3f(0, 1, 0);
+		greenBalloon->Display();
+		glPopMatrix();
+	}
 
-	glPushMatrix();
-	glTranslatef(bluePosition.x, bluePosition.y, bluePosition.z);
-	glColor3f(0, 0, 1);
-	blueBalloon->Display();
-	glPopMatrix();
+	if (!blueHit)
+	{
+		glPushMatrix();
+		glTranslatef(bluePosition.x, bluePosition.y, bluePosition.z);
+		glColor3f(0, 0, 1);
+		blueBalloon->Display();
+		glPopMatrix();
+	}
 }
 
 void Game::DisplayText(char * text)
@@ -299,20 +422,29 @@ void Game::DisplayBalloonText()
 	glPushMatrix();
 	glColor3f(1, 1, 1);
 
-	glPushMatrix();
-	glTranslatef(redPosition.x - redTextHalfWidth, redPosition.y + redBalloon->GetRadius() * radiusMultiplier, redPosition.z);
-	DisplayText("1");
-	glPopMatrix();
+	if (!redHit)
+	{
+		glPushMatrix();
+		glTranslatef(redPosition.x - redTextHalfWidth, redPosition.y + redBalloon->GetRadius() * radiusMultiplier, redPosition.z);
+		DisplayText("1");
+		glPopMatrix();
+	}
 
-	glPushMatrix();
-	glTranslatef(greenPosition.x - greenTextHalfWidth, greenPosition.y + greenBalloon->GetRadius() * radiusMultiplier, greenPosition.z);
-	DisplayText("2");
-	glPopMatrix();
+	if (!greenHit)
+	{
+		glPushMatrix();
+		glTranslatef(greenPosition.x - greenTextHalfWidth, greenPosition.y + greenBalloon->GetRadius() * radiusMultiplier, greenPosition.z);
+		DisplayText("2");
+		glPopMatrix();
+	}
 
-	glPushMatrix();
-	glTranslatef(bluePosition.x - blueTextHalfWidth, bluePosition.y + blueBalloon->GetRadius() * radiusMultiplier, bluePosition.z);
-	DisplayText("3");
-	glPopMatrix();
+	if (!blueHit)
+	{
+		glPushMatrix();
+		glTranslatef(bluePosition.x - blueTextHalfWidth, bluePosition.y + blueBalloon->GetRadius() * radiusMultiplier, bluePosition.z);
+		DisplayText("3");
+		glPopMatrix();
+	}
 	
 	glPopMatrix();
 }
@@ -372,13 +504,21 @@ void Game::DisplayGameInfo()
 
 void Game::SetCamera()
 {	
-	if (cameraMode == FIRST_PERSON) {
-		glm::vec3 duckyPosition = ducky->GetNewPosition();
+	switch (cameraMode)
+	{
+		case FIXED_POSITION:
+			gluLookAt(0, 0, 2, 0, 0, -5, 0, 1, 0);
 
-		gluLookAt(duckyPosition.x, duckyPosition.y, duckyPosition.z, duckyPosition.x, duckyPosition.y, duckyPosition.z - .5, 0, 1, 0);
-	}
-	else if (cameraMode == REORIENT) {
-		gluLookAt(0, 0, 2, 0, 0, -5, 0, 1, 0);
+			break;
+
+		case REORIENT:
+			break;
+
+		case FIRST_PERSON:
+			glm::vec3 duckyPosition = ducky->GetNewPosition();
+			gluLookAt(duckyPosition.x, duckyPosition.y, duckyPosition.z, duckyPosition.x, duckyPosition.y, duckyPosition.z - .5, 0, 1, 0);
+
+			break;
 	}
 }
 
@@ -416,6 +556,10 @@ void Game::FireDucky()
 	}
 	else
 	{
-		ResetDucky();
+		// in manual mode, the ducky can be destroyed mid-flight
+		if (mode == MANUAL)
+		{
+			ResetDucky();
+		}
 	}
 }

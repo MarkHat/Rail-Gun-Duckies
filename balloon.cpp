@@ -35,6 +35,11 @@ glm::vec3 Balloon::GetPosition()
 	return position;
 }
 
+glm::vec3 Balloon::GetBounds()
+{
+	return bounds;
+}
+
 void Balloon::SetPosition(GLfloat x, GLfloat y, GLfloat z)
 {
 	position.x = x;

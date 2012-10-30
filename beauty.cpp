@@ -1,11 +1,18 @@
 #include "beauty.h"
 
+const int ROTATION_SPEED = 45;
+const int VIEW_TILT = 5;
+
+const glm::vec3 DUCKY_POSITION = glm::vec3(0, 1, -3);
+const glm::vec3 GUN_POSITION = glm::vec3(0, 1, -5);
+const glm::vec3 BALLOON_POSITION = glm::vec3(0, 2.75, -5);
+const glm::vec3 PEDESTAL_POSITION = glm::vec3(0, -1.25, -7);
+
 enum Mode
 {
 	DUCKY,
 	RAIL_GUN,
-	BALLOON,
-	IDLE
+	BALLOON
 };
 
 enum Mode Beauty::mode = DUCKY;
@@ -15,7 +22,6 @@ double Beauty::oldElapsedTime = 0;
 double Beauty::newElapsedTime = 0;
 double Beauty::pausedTime = 0;
 double Beauty::realElapsedTime = 0;
-int Beauty::rotationSpeed = 45;
 
 Ducky * Beauty::ducky = new Ducky();
 RailGun * Beauty::railgun = new RailGun();
@@ -44,10 +50,6 @@ void Beauty::CycleMode()
 			break;
 
 		case BALLOON:
-			mode = IDLE;
-			break;
-
-		case IDLE:
 			mode = DUCKY;
 			break;
 	}
@@ -96,12 +98,13 @@ void Beauty::Update(bool paused)
 
 void Beauty::Display()
 {
-	glPushMatrix();
-	glRotatef(5, 1, 0, 0);
+	//glPushMatrix();
+	//glRotatef(VIEW_TILT, 1, 0, 0);
 
 	glPushMatrix();
-	glTranslatef(0, -2, -7);
-	glRotatef(realElapsedTime * rotationSpeed, 0, 1, 0);
+	glTranslatef(PEDESTAL_POSITION.x, PEDESTAL_POSITION.y, PEDESTAL_POSITION.z);
+	glRotatef(VIEW_TILT, 1, 0, 0);
+	glRotatef(realElapsedTime * ROTATION_SPEED, 0, 1, 0);
 	pedestal->Display();
 	glPopMatrix();
 
@@ -110,22 +113,25 @@ void Beauty::Display()
 	switch (mode)
 	{
 		case DUCKY:
-			glTranslatef(0, 1, -3);
-			glRotatef(realElapsedTime * rotationSpeed, 0, 1, 0);
+			glTranslatef(DUCKY_POSITION.x, DUCKY_POSITION.y, DUCKY_POSITION.z);
+			glRotatef(VIEW_TILT, 1, 0, 0);
+			glRotatef(realElapsedTime * ROTATION_SPEED, 0, 1, 0);
 			ducky->Display();
 
 			break;
 			
 		case RAIL_GUN:
-			glTranslatef(0, 1, -5);
-			glRotatef(realElapsedTime * rotationSpeed, 0, 1, 0);
+			glTranslatef(GUN_POSITION.x, GUN_POSITION.y, GUN_POSITION.z);
+			glRotatef(VIEW_TILT, 1, 0, 0);
+			glRotatef(realElapsedTime * ROTATION_SPEED, 0, 1, 0);
 			railgun->Display();
 
 			break;
 			
 		case BALLOON:
-			glTranslatef(0, 2.5, -5);
-			glRotatef(realElapsedTime * rotationSpeed, 0, 1, 0);
+			glTranslatef(BALLOON_POSITION.x, BALLOON_POSITION.y, BALLOON_POSITION.z);
+			glRotatef(VIEW_TILT, 1, 0, 0);
+			glRotatef(realElapsedTime * ROTATION_SPEED, 0, 1, 0);
 			balloon->Display();
 
 			break;
@@ -137,5 +143,5 @@ void Beauty::Display()
 	}
 
 	glPopMatrix();
-	glPopMatrix();
+	//glPopMatrix();
 }

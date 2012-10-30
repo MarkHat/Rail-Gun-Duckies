@@ -1,13 +1,14 @@
 #include "railgun.h"
 
+const int YAW_RANGE = 75;
+const int PITCH_RANGE = 45;
+
 RailGun::RailGun()
 {
 	railgunDisplayList = -1;
 
 	yaw = 0;
 	pitch = 0;
-	yawRange = 75;
-	pitchRange = 45;
 
 	position = glm::vec3(0, 0, 0);
 }
@@ -87,30 +88,36 @@ void DrawGun()
 	glPushMatrix();
 	glTranslatef(0, 0, 4);
 
+	// close end piece
 	glPushMatrix();
 	DrawEndPiece();
 	glPopMatrix();
 
+	// top-right long piece
 	glPushMatrix();
 	glTranslatef(0.67, 0.67, -5.5);
 	DrawLongPiece();
 	glPopMatrix();
 
+	// bottom-right long piece
 	glPushMatrix();
 	glTranslatef(0.67, -0.67, -5.5);
 	DrawLongPiece();
 	glPopMatrix();
 
+	// bottom-left long piece
 	glPushMatrix();
 	glTranslatef(-0.67, -0.67, -5.5);
 	DrawLongPiece();
 	glPopMatrix();
 
+	// top-left long piece
 	glPushMatrix();
 	glTranslatef(-0.67, 0.67, -5.5);
 	DrawLongPiece();
 	glPopMatrix();
 	
+	// far end piece
 	glPushMatrix();
 	glTranslatef(0, 0, -11);
 	DrawEndPiece();
@@ -119,32 +126,50 @@ void DrawGun()
 	glPopMatrix();
 }
 
+void RailGun::CreateRailgunDisplayList()
+{
+	railgunDisplayList = glGenLists(1);
+	glNewList(railgunDisplayList, GL_COMPILE);
+
+	glPushMatrix();
+	glColor3f(1, 1, 1);
+
+	// note: everything is scaled in half so that the gun's dimensions will be 1x1x6
+	glScalef(0.5, 0.5, 0.5);
+	DrawGun();
+	glPopMatrix();
+
+	glEndList();
+}
+
 void RailGun::Display()
 {
 	if (railgunDisplayList == -1)
 	{
-		railgunDisplayList = glGenLists(1);
-		glNewList(railgunDisplayList, GL_COMPILE);
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-		glColor3f(1, 1, 1);
-		glScalef(0.5, 0.5, 0.5);
-		DrawGun();
-		glPopMatrix();
-		glEndList();
+		CreateRailgunDisplayList();
 	}
 
 	glCallList(railgunDisplayList);
 }
 
+void RailGun::SetYaw(int yaw)
+{
+	this->yaw = yaw;
+}
+
+void RailGun::SetPitch(int pitch)
+{
+	this->pitch = pitch;
+}
+
 void RailGun::UpdateYaw(int mouseX, int windowWidth)
 {
-	yaw = -(mouseX - windowWidth / 2) / (windowWidth / yawRange);
+	yaw = -(mouseX - windowWidth / 2) / (windowWidth / YAW_RANGE);
 }
 
 void RailGun::UpdatePitch(int mouseY, int windowHeight)
 {
-	pitch = pitchRange - mouseY / (windowHeight / pitchRange);
+	pitch = PITCH_RANGE - mouseY / (windowHeight / PITCH_RANGE);
 }
 
 void RailGun::SetPosition(GLfloat x, GLfloat y, GLfloat z)

@@ -27,7 +27,6 @@ class Beauty
 		static double newElapsedTime;
 		static double pausedTime;
 		static double realElapsedTime;
-		static int rotationSpeed;
 
 		static void DisplayXYZ();
 };

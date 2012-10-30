@@ -56,7 +56,6 @@ void CycleGameMode()
 			break;
 
 		case AUTOMATED:
-			Beauty::CycleMode();
 			Game::CycleMode();
 			glEnable(GL_LIGHT1);
 			gameMode = RUBBER_DUCKY_BEAUTY;
@@ -209,7 +208,10 @@ void KeyboardFunc(unsigned char c, int x, int y)
 
 void MouseMotionFunc(int x, int y)
 {
-	Game::MouseMotionFunc(x, y, windowWidth, windowHeight);
+	if (gameMode != AUTOMATED)
+	{
+		Game::MouseMotionFunc(x, y, windowWidth, windowHeight);
+	}
 }
 
 void SpecialFunc(int key, int x, int y)

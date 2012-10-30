@@ -17,6 +17,8 @@ class Balloon
 		
 		float GetRadius();
 		glm::vec3 GetPosition();
+		glm::vec3 GetBounds();
+
 		void SetPosition(GLfloat x, GLfloat y, GLfloat z);
 
 	private:

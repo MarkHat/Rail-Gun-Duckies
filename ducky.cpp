@@ -1,5 +1,24 @@
 #include "ducky.h"
 
+const glm::vec3 BOUNDS = glm::vec3(1, 1, 1);
+
+const int SLICES = 25;
+const int STACKS = 25;
+
+const int WING_TILT = 10;
+const glm::vec3 WING_OFFSET = glm::vec3(0, 0.1, 0.5);
+const glm::vec3 WING_SCALE = glm::vec3(0.6, 0.3, 0.2);
+
+const glm::vec3 HEAD_OFFSET = glm::vec3(0.3, 0.6, 0);
+const glm::vec3 HEAD_SCALE = glm::vec3(0.3, 0.3, 0.3);
+
+const glm::vec3 BEAK_COLOR = glm::vec3(1, 0.64, 0);
+const glm::vec3 BEAK_OFFSET = glm::vec3(0.55, 0.65, 0);
+const glm::vec3 BEAK_SCALE = glm::vec3(0.7, 0.7, 0.7);
+
+const GLfloat EYE_RADIUS = 0.05;
+const glm::vec3 EYE_OFFSET = glm::vec3(0.5, 0.76, 0.15);
+
 Ducky::Ducky()
 {
 	debug = false;
@@ -10,7 +29,6 @@ Ducky::Ducky()
 	oldPosition = glm::vec3(0, 0, 0);
 	newPosition = glm::vec3(0, 0, 0);
 	velocity = glm::vec3(0, 0, 0);
-	bounds = glm::vec3(1, 1, 1);
 }
 
 Ducky::~Ducky()
@@ -38,55 +56,53 @@ void Ducky::CreateDuckyDisplayList()
 	// reference: http://blog.repertoiremag.com/wp-content/uploads/2010/09/rubber-ducky1.jpg
 	// body
 	glPushMatrix();
-	glScalef(2, 2, 2);
-	gluSphere(quadric, .25, 25, 25);
+	gluSphere(quadric, 0.5, SLICES, STACKS);
 	glPopMatrix();
 
 	// left wing
 	glPushMatrix();
-	glTranslatef(0, .1, -.5);
-	glRotatef(10, 1, 0, 0);
-	glScalef(0.6, 0.3, 0.2);
-	gluSphere(quadric, 1, 25, 25);
+	glTranslatef(WING_OFFSET.x, WING_OFFSET.y, -WING_OFFSET.z);
+	glRotatef(WING_TILT, 1, 0, 0);
+	glScalef(WING_SCALE.x, WING_SCALE.y, WING_SCALE.z);
+	gluSphere(quadric, 1, SLICES, STACKS);
 	glPopMatrix();
 
 	// right wing
 	glPushMatrix();
-	glTranslatef(0, 0.1, 0.5);
-	glRotatef(-10, 1, 0, 0);
-	glScalef(0.6, 0.3, 0.2);
-	gluSphere(quadric, 1, 25, 25);
+	glTranslatef(WING_OFFSET.x, WING_OFFSET.y, WING_OFFSET.z);
+	glRotatef(-WING_TILT, 1, 0, 0);
+	glScalef(WING_SCALE.x, WING_SCALE.y, WING_SCALE.z);
+	gluSphere(quadric, 1, SLICES, STACKS);
 	glPopMatrix();
 
 	// head
 	glPushMatrix();
-	glScalef(1.2, 1.1, 1.2);
-	glTranslatef(.3, .6, 0);
-	gluSphere(quadric, .25, 25, 25);
+	glTranslatef(HEAD_OFFSET.x, HEAD_OFFSET.y, HEAD_OFFSET.z);
+	glScalef(HEAD_SCALE.x, HEAD_SCALE.y, HEAD_SCALE.z);
+	gluSphere(quadric, 1, SLICES, STACKS);
 	glPopMatrix();
 
 	// beak
 	glPushMatrix();
-	glTranslatef(.6, .7, 0);
-	glColor3f(1, .64, 0);
-	glScalef(.5, .7, 1);
+	glColor3f(BEAK_COLOR.x, BEAK_COLOR.y, BEAK_COLOR.z);
+	glTranslatef(BEAK_OFFSET.x, BEAK_OFFSET.y, BEAK_OFFSET.z);
+	glScalef(BEAK_SCALE.x, BEAK_SCALE.y, BEAK_SCALE.z);
 	glRotatef(90, 0, 1, 0);
-	gluCylinder(quadric, .1, 0, .5, 20, 20);
+	gluCylinder(quadric, 0.1, 0, .5, SLICES, STACKS);
 	glPopMatrix();
 
-	// eyes
+	// right eye
 	glPushMatrix();
-	glScalef(1.2, 1, 1);
-	glTranslatef(.5, .8, .15);
 	glColor3f(0, 0, 0);
-	gluSphere(quadric, .05, 20, 20);
+	glTranslatef(EYE_OFFSET.x, EYE_OFFSET.y, EYE_OFFSET.z);
+	gluSphere(quadric, EYE_RADIUS, SLICES, STACKS);
 	glPopMatrix();
 
+	// left eye
 	glPushMatrix();
-	glScalef(1.2, 1, 1);
-	glTranslatef(.5, .8, -.15);
-	glColor3f(0,0,0);
-	gluSphere(quadric, .05, 20, 20);
+	glColor3f(0, 0, 0);
+	glTranslatef(EYE_OFFSET.x, EYE_OFFSET.y, -EYE_OFFSET.z);
+	gluSphere(quadric, EYE_RADIUS, SLICES, STACKS);
 	glPopMatrix();
 
 	gluDeleteQuadric(quadric);
@@ -102,8 +118,8 @@ void Ducky::CreateBoundingBoxDisplayList()
 	glPushMatrix();
 
 	// the ducky's bounding box is just a rectangular prism surrounding the duck, so I'm
-	// simply computing each vertex manually
-	glm::vec3 halfBounds = glm::vec3(bounds.x / 2, bounds.y / 2, bounds.z / 2);
+	// simply computing and adding each vertex manually
+	glm::vec3 halfBounds = glm::vec3(BOUNDS.x / 2, BOUNDS.y / 2, BOUNDS.z / 2);
 
 	glm::vec3 boxVertices[8] = {
 		// top half of the box
@@ -196,7 +212,7 @@ glm::vec3 Ducky::GetVelocity()
 
 glm::vec3 Ducky::GetBounds()
 {
-	return bounds;
+	return BOUNDS;
 }
 
 void Ducky::SetPosition(GLfloat x, GLfloat y, GLfloat z)

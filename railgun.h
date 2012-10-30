@@ -11,6 +11,8 @@ class RailGun
 
 		void Display();
 
+		void SetYaw(int yaw);
+		void SetPitch(int pitch);
 		void UpdateYaw(int mouseX, int windowWidth);
 		void UpdatePitch(int mouseY, int windowHeight);
 		void SetPosition(GLfloat x, GLfloat y, GLfloat z);
@@ -24,8 +26,7 @@ class RailGun
 
 		float yaw;
 		float pitch;
-		int yawRange;
-		int pitchRange;
-
 		glm::vec3 position;
+
+		void CreateRailgunDisplayList();
 };

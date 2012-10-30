@@ -33,7 +33,6 @@ class Ducky
 		glm::vec3 oldPosition;
 		glm::vec3 newPosition;
 		glm::vec3 velocity;
-		glm::vec3 bounds;
 
 		void CreateDuckyDisplayList();
 		void CreateBoundingBoxDisplayList();

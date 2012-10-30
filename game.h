@@ -43,6 +43,10 @@ class Game
 		static Balloon * greenBalloon;
 		static Balloon * blueBalloon;
 
+		static bool redHit;
+		static bool greenHit;
+		static bool blueHit;
+
 		static bool debug;
 		static bool duckyFired;
 		static double oldElapsedTime;
@@ -62,4 +66,10 @@ class Game
 		static void GenerateBalloons();
 		static void ResetGame();
 		static void ResetDucky();
+		static void ResetBalloons();
+
+		static bool CheckDuckyBalloonCollision(glm::vec3 duckyTempPosition, Balloon * balloon);
+		static void HandleCollisions();
+
+		static void AutomateRailgun();
 };
