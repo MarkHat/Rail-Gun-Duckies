@@ -457,7 +457,7 @@ void Game::SetWindowDimensions(int width, int height)
 
 char * Game::ConvertToString(int value)
 {
-	char text[8];
+	char text[20];
 	
 	// note: this was the easiest way I could find to convert an integer to a string
 	sprintf(text, "%d", value);
@@ -560,6 +560,11 @@ void Game::FireDucky()
 		if (mode == MANUAL)
 		{
 			ResetDucky();
+			duckiesLeft--;
+			if (duckiesLeft == 0)
+			{
+				ResetGame();
+			}
 		}
 	}
 }

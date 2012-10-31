@@ -5,7 +5,7 @@ const int VIEW_TILT = 5;
 
 const glm::vec3 DUCKY_POSITION = glm::vec3(0, 1, -3);
 const glm::vec3 GUN_POSITION = glm::vec3(0, 1, -5);
-const glm::vec3 BALLOON_POSITION = glm::vec3(0, 2.75, -5);
+const glm::vec3 BALLOON_POSITION = glm::vec3(0, 3.3, -5);
 const glm::vec3 PEDESTAL_POSITION = glm::vec3(0, -1.25, -7);
 
 enum Mode
@@ -129,6 +129,7 @@ void Beauty::Display()
 			break;
 			
 		case BALLOON:
+			glColor3f(1, 0, 0);
 			glTranslatef(BALLOON_POSITION.x, BALLOON_POSITION.y, BALLOON_POSITION.z);
 			glRotatef(VIEW_TILT, 1, 0, 0);
 			glRotatef(realElapsedTime * ROTATION_SPEED, 0, 1, 0);
@@ -143,5 +144,5 @@ void Beauty::Display()
 	}
 
 	glPopMatrix();
-	//glPopMatrix();
+
 }

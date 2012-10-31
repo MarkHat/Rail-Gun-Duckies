@@ -2,6 +2,7 @@
 
 Pedestal::Pedestal()
 {
+	
 	debug = false;
 
 	slices = 50;
