@@ -221,6 +221,11 @@ void KeyboardFunc(unsigned char c, int x, int y)
 		case 'P':
 			paused = !paused;
 			break;
+
+		case 'r':
+		case 'R':
+			Game::Replay();
+			break;
 	}
 }
 
@@ -252,7 +257,7 @@ void TimerFunc(int value)
 
 		case MANUAL:
 		case AUTOMATED:
-			Game::Update();
+			Game::Update(paused);
 			break;
 	}
 

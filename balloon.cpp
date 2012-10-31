@@ -182,10 +182,10 @@ void Balloon::Display()
 		CreateBalloonDisplayList();
 	}
 
-	/*if (normalDisplayListHandle == -1)
+	if (normalDisplayListHandle == -1)
 	{
 		CreateNormalDisplayList();
-	}*/
+	}
 
 	if (boundingBoxDisplayListHandle == -1)
 	{
@@ -196,20 +196,7 @@ void Balloon::Display()
 
 	if (debug)
 	{
-		ComputeDebugVertices();
-	GenerateDebugIndices();
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_NORMAL_ARRAY);
-		
-	glColor3f(1, 1, 1);
-	glDisable(GL_LIGHTING);
-	glVertexPointer(3, GL_FLOAT, 0, &debugVertices[0]);
-	glDrawElements(GL_LINES, numDebugVertices, GL_UNSIGNED_INT, &debugIndices[0]);
-	glEnable(GL_LIGHTING);
-
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_NORMAL_ARRAY);
+		glCallList(normalDisplayListHandle);
 		glCallList(boundingBoxDisplayListHandle);
 	}
 }

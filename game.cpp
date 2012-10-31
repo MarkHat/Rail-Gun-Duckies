@@ -17,6 +17,9 @@ enum CameraModes
 int Game::score = 0;
 int Game::duckiesLeft = 3;
 
+double Game::pausedTime = 0;
+double Game::difference = 0;
+
 int Game::windowWidth = 800;
 int Game::windowHeight = 600;
 
@@ -299,11 +302,21 @@ void Game::AutomateRailgun()
 	FireDucky();
 }
 
-void Game::Update()
+void Game::Update(bool paused)
 {
+
 	oldElapsedTime = newElapsedTime;
 	newElapsedTime = (double) glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+	if (paused){
 
+	pausedTime += difference;
+
+	}
+
+
+	else{
+
+	difference = newElapsedTime - (oldElapsedTime + pausedTime);
 	if (mode == AUTOMATED)
 	{
 		AutomateRailgun();
@@ -311,7 +324,6 @@ void Game::Update()
 
 	if (duckyFired)
 	{
-		double difference = newElapsedTime - oldElapsedTime;
 
 		ducky->Update(difference, gravity);
 		HandleCollisions();
@@ -321,6 +333,7 @@ void Game::Update()
 		{
 			ResetBalloons();
 		}
+	}
 	}
 }
 
@@ -504,14 +517,21 @@ void Game::DisplayGameInfo()
 
 void Game::SetCamera()
 {	
+	double xLookAt = 0;
+	double yLookAt = 0;
+
 	switch (cameraMode)
 	{
 		case FIXED_POSITION:
-			gluLookAt(0, 0, 2, 0, 0, -5, 0, 1, 0);
-
+			gluLookAt(0, 0, 0, 0, 0, -5, 0, 1, 0);
 			break;
 
 		case REORIENT:
+
+			xLookAt = glm::tan(railgun->GetYaw()*radianConversion)*-9;
+			yLookAt = glm::tan(railgun->GetPitch()*radianConversion) *9;
+
+			gluLookAt(0, 0, 0 , xLookAt, yLookAt, -6, 0, 1, 0);
 			break;
 
 		case FIRST_PERSON:

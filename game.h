@@ -11,7 +11,7 @@
 class Game 
 {
 	public:
-		static void Update();
+		static void Update(bool paused);
 		static void Display();
 		static void ToggleDebug();
 		static void CycleMode();
@@ -19,10 +19,14 @@ class Game
 		static void FireDucky();
 		static void CycleCameraMode();
 		static void SetWindowDimensions(int width, int height);
+		static void Replay();
 
 	private:
 		static int score;
 		static int duckiesLeft;
+		static bool paused;
+		static double pausedTime;
+		static double difference;
 
 		static int windowWidth;
 		static int windowHeight;
