@@ -19,14 +19,11 @@ class Game
 		static void FireDucky();
 		static void CycleCameraMode();
 		static void SetWindowDimensions(int width, int height);
-		static void Replay();
 
 	private:
 		static int score;
 		static int duckiesLeft;
 		static bool paused;
-		static double pausedTime;
-		static double difference;
 
 		static int windowWidth;
 		static int windowHeight;
@@ -58,14 +55,18 @@ class Game
 
 		static void SetCamera();
 		static char * ConvertToString(int value);
+		static char * AssignCameraModeText();
 
+		static void DisplayOrthoText(const char * text, glm::vec3 position, GLfloat scale);
 		static void DisplayXYZ();
 		static void DisplayDucky();
 		static void DisplayRailGun();
 		static void DisplayBalloons();
-		static void DisplayText(char * text);
-		static void DisplayBalloonText();
+		static void DisplayBalloonValues();
 		static void DisplayGameInfo();
+		static void DisplayScore();
+		static void DisplayDuckiesLeft();
+		static void DisplayCameraMode();
 
 		static void GenerateBalloons();
 		static void ResetGame();
@@ -75,5 +76,6 @@ class Game
 		static bool CheckDuckyBalloonCollision(glm::vec3 duckyTempPosition, Balloon * balloon);
 		static void HandleCollisions();
 
+		static int EstimateTargetPitch(float xDifference, float yDifference, float zDifference, float targetY);
 		static void AutomateRailgun();
 };

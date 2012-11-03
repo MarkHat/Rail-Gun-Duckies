@@ -1,5 +1,18 @@
 #include "balloon.h"
 
+const int SLICES = 50;
+const int STACKS = 50;
+const GLfloat RADIUS = 2;
+const GLfloat PI = GLfloat(3.14159);
+
+const GLfloat BOTTOM_HALF_HEIGHT_SCALE = GLfloat(1.5);
+const GLfloat NORMAL_LENGTH_SCALE = GLfloat(0.2);
+
+const GLfloat TORUS_INNER_RADIUS = GLfloat(0.1);
+const GLfloat TORUS_OUTER_RADIUS = GLfloat(0.1);
+const int TORUS_SIDES = 20;
+const int TORUS_RINGS = 20;
+
 Balloon::Balloon()
 {
 	vaDisplayListHandle = -1;
@@ -8,15 +21,11 @@ Balloon::Balloon()
 
 	debug = false;
 
-	slices = 50;
-	stacks = 50;
-	radius = 2;
-
 	position = glm::vec3(0, 0, 0);
-	bounds = glm::vec3(radius * 2, radius * 2.5, radius * 2);
+	bounds = glm::vec3(RADIUS * 2, RADIUS * (2 + BOTTOM_HALF_HEIGHT_SCALE), RADIUS * 2);
 
-	numVaVertices = (slices + 1) * (stacks + 1);
-	numVaIndices = (slices + 1) * (stacks) * 6;
+	numVaVertices = (SLICES + 1) * (STACKS + 1);
+	numVaIndices = (SLICES + 1) * (STACKS) * 6;
 	numDebugVertices = numVaVertices * 2;
 	numDebugIndices = numDebugVertices;
 }
@@ -27,7 +36,7 @@ Balloon::~Balloon()
 
 float Balloon::GetRadius()
 {
-	return radius;
+	return RADIUS;
 }
 
 glm::vec3 Balloon::GetPosition()
@@ -77,8 +86,8 @@ void Balloon::CreateBalloonDisplayList()
 
 	glPushMatrix();
 	glRotatef(90, 1, 0, 0);
-	glTranslatef(0, 0, 3.05);
-	glutSolidTorus(.1, .1, 20, 20);
+	glTranslatef(0, 0, RADIUS * BOTTOM_HALF_HEIGHT_SCALE);
+	glutSolidTorus(TORUS_INNER_RADIUS, TORUS_OUTER_RADIUS, TORUS_SIDES, TORUS_RINGS);
 	glPopMatrix();
 
 	glEndList();
@@ -116,8 +125,7 @@ void Balloon::CreateBoundingBoxDisplayList()
 	// the ducky's bounding box is just a rectangular prism surrounding the duck, so I'm
 	// simply computing each vertex manually
 	glm::vec3 halfBounds = glm::vec3(bounds.x / 2, bounds.y / 2, bounds.z / 2);
-	float halfRadius = radius / 2;
-	float quarterRadius = radius / 4;
+	float quarterRadius = RADIUS / 4;
 
 	glm::vec3 boxVertices[8] = {
 		// top half of the box
@@ -203,31 +211,30 @@ void Balloon::Display()
 
 void Balloon::ComputeVaVertices()
 {
-	float pi = 3.14159;
-	float radianConversion = pi / 180;
-	float sliceAngleIncrement = 360 / slices * radianConversion;
-	float sinAngleIncrement = pi / (stacks + 1);
-	float heightIncrement = radius * 2 / stacks;
+	float radianConversion = PI / 180;
+	float sliceAngleIncrement = 360 / SLICES * radianConversion;
+	float sinAngleIncrement = PI / (STACKS + 1);
+	float heightIncrement = RADIUS * 2 / STACKS;
 
-	for (int i = 0; i < stacks + 1; i++)
+	for (int i = 0; i < STACKS + 1; i++)
 	{
 		float currentY;
 		float currentRadius;
 
 		// top half
-		if (i <= (stacks + 1) / 2)
+		if (i <= (STACKS + 1) / 2)
 		{
-			currentY = radius - i * heightIncrement;
-			currentRadius = glm::sqrt(radius * radius - currentY * currentY);
+			currentY = RADIUS - i * heightIncrement;
+			currentRadius = glm::sqrt(RADIUS * RADIUS - currentY * currentY);
 		}
 		// bottom half
 		else
 		{
-			currentY = (radius - i * heightIncrement) * 1.5;
-			currentRadius = glm::sin(pi / 2 + sinAngleIncrement * ((stacks + 1) / 2 - i)) * radius;
+			currentY = (RADIUS - i * heightIncrement) * BOTTOM_HALF_HEIGHT_SCALE;
+			currentRadius = glm::sin(PI / 2 + sinAngleIncrement * ((STACKS + 1) / 2 - i)) * RADIUS;
 		}
 
-		for (int j = 0; j < slices + 1; j++)
+		for (int j = 0; j < SLICES + 1; j++)
 		{
 			vaVertices.push_back(glm::cos(sliceAngleIncrement * j) * currentRadius);
 			vaVertices.push_back(currentY);
@@ -238,35 +245,35 @@ void Balloon::ComputeVaVertices()
 
 void Balloon::GenerateVaIndices()
 {
-	for (int i = 0; i < stacks; i++)
+	for (int i = 0; i < STACKS; i++)
 	{
-		for (int j = 0; j < slices + 1; j++)
+		for (int j = 0; j < SLICES + 1; j++)
 		{
 			// first triangle
-			vaIndices.push_back(i * (slices + 1) + j);
+			vaIndices.push_back(i * (SLICES + 1) + j);
 
-			if (j == slices)
+			if (j == SLICES)
 			{
-				vaIndices.push_back(i * (slices + 1));
+				vaIndices.push_back(i * (SLICES + 1));
 			}
 			else
 			{
-				vaIndices.push_back(i * (slices + 1) + j + 1);
+				vaIndices.push_back(i * (SLICES + 1) + j + 1);
 			}
 
-			vaIndices.push_back((i + 1) * (slices + 1) + j);
+			vaIndices.push_back((i + 1) * (SLICES + 1) + j);
 
 			// second triangle
-			vaIndices.push_back(i * (slices + 1) + j);
-			vaIndices.push_back((i + 1) * (slices + 1) + j);
+			vaIndices.push_back(i * (SLICES + 1) + j);
+			vaIndices.push_back((i + 1) * (SLICES + 1) + j);
 
 			if (j == 0)
 			{
-				vaIndices.push_back((i + 2) * (slices + 1) - 1);
+				vaIndices.push_back((i + 2) * (SLICES + 1) - 1);
 			}
 			else
 			{
-				vaIndices.push_back((i + 1) * (slices + 1) + j - 1);
+				vaIndices.push_back((i + 1) * (SLICES + 1) + j - 1);
 			}
 		}
 	}
@@ -274,14 +281,14 @@ void Balloon::GenerateVaIndices()
 
 void Balloon::ComputeVaNormals()
 {
-	for (int i = 0; i < stacks + 1; i++)
+	for (int i = 0; i < STACKS + 1; i++)
 	{
-		for (int j = 0; j < slices + 1; j++)
+		for (int j = 0; j < SLICES + 1; j++)
 		{
-			int vaIndex = (i * (slices + 1) + j) * 3;
+			int vaIndex = (i * (SLICES + 1) + j) * 3;
 
 			// top half
-			if (i <= (stacks + 1) / 2)
+			if (i <= (STACKS + 1) / 2)
 			{
 				float magnitude = sqrt(vaVertices.at(vaIndex) * vaVertices.at(vaIndex) +
 									   vaVertices.at(vaIndex + 1) * vaVertices.at(vaIndex + 1) +
@@ -294,11 +301,11 @@ void Balloon::ComputeVaNormals()
 			// bottom half
 			else
 			{
-				float pi = 3.14159;
-				float sinAngleIncrement = pi / (stacks + 1);
+				float PI = float(3.14159);
+				float sinAngleIncrement = PI / (STACKS + 1);
 
 				vaNormals.push_back(vaVertices.at(vaIndex));
-				vaNormals.push_back(-glm::cos(pi / 2 + sinAngleIncrement * ((stacks + 1) / 2 - i)) / 1.5);
+				vaNormals.push_back(-glm::cos(PI / 2 + sinAngleIncrement * ((STACKS + 1) / 2 - i)) / BOTTOM_HALF_HEIGHT_SCALE);
 				vaNormals.push_back(vaVertices.at(vaIndex + 2));
 
 				int normalIndex = vaNormals.size() - 3;
@@ -324,9 +331,9 @@ void Balloon::ComputeDebugVertices()
 		float vZ = vaVertices.at(i * 3 + 2);
 
 		// coordinates of the vertex plus its normal
-		float nX = vX + vaNormals.at(i * 3) * 0.2;
-		float nY = vY + vaNormals.at(i * 3 + 1) * 0.2;
-		float nZ = vZ + vaNormals.at(i * 3 + 2) * 0.2;
+		float nX = vX + vaNormals.at(i * 3) * NORMAL_LENGTH_SCALE;
+		float nY = vY + vaNormals.at(i * 3 + 1) * NORMAL_LENGTH_SCALE;
+		float nZ = vZ + vaNormals.at(i * 3 + 2) * NORMAL_LENGTH_SCALE;
 
 		debugVertices.push_back(vX);
 		debugVertices.push_back(vY);

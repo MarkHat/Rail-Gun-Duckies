@@ -11,22 +11,35 @@ class RailGun
 
 		void Display();
 
-		void SetYaw(int yaw);
-		void SetPitch(int pitch);
+		void SetYaw(GLfloat yaw);
+		void SetPitch(GLfloat pitch);
+		void SetTargetYaw(GLfloat targetYaw);
+		void SetTargetPitch(GLfloat targetPitch);
 		void UpdateYaw(int mouseX, int windowWidth);
 		void UpdatePitch(int mouseY, int windowHeight);
 		void SetPosition(GLfloat x, GLfloat y, GLfloat z);
 
+		void SetAnimating();
+		void MoveTowardsTarget();
+
 		float GetYaw();
 		float GetPitch();
 		glm::vec3 GetPosition();
+		bool IsAnimating();
 
 	private:
 		GLuint railgunDisplayList;
 
 		float yaw;
 		float pitch;
+		float targetYaw;
+		float targetPitch;
 		glm::vec3 position;
+
+		float yawIncrement;
+		float pitchIncrement;
+		bool animating;
+		int animationFrame;
 
 		void CreateRailgunDisplayList();
 };

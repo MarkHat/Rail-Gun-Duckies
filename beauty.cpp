@@ -1,7 +1,7 @@
 #include "beauty.h"
 
-const int ROTATION_SPEED = 45;
-const int VIEW_TILT = 5;
+const GLfloat ROTATION_SPEED = 45;
+const GLfloat VIEW_TILT = 5;
 
 const glm::vec3 DUCKY_POSITION = glm::vec3(0, 1, -3);
 const glm::vec3 GUN_POSITION = glm::vec3(0, 1, -5);
@@ -98,13 +98,12 @@ void Beauty::Update(bool paused)
 
 void Beauty::Display()
 {
-	//glPushMatrix();
-	//glRotatef(VIEW_TILT, 1, 0, 0);
+	// note: the casts to GLfloat make a few warnings go away
 
 	glPushMatrix();
 	glTranslatef(PEDESTAL_POSITION.x, PEDESTAL_POSITION.y, PEDESTAL_POSITION.z);
 	glRotatef(VIEW_TILT, 1, 0, 0);
-	glRotatef(realElapsedTime * ROTATION_SPEED, 0, 1, 0);
+	glRotatef(GLfloat(realElapsedTime) * ROTATION_SPEED, 0, 1, 0);
 	pedestal->Display();
 	glPopMatrix();
 
@@ -115,7 +114,7 @@ void Beauty::Display()
 		case DUCKY:
 			glTranslatef(DUCKY_POSITION.x, DUCKY_POSITION.y, DUCKY_POSITION.z);
 			glRotatef(VIEW_TILT, 1, 0, 0);
-			glRotatef(realElapsedTime * ROTATION_SPEED, 0, 1, 0);
+			glRotatef(GLfloat(realElapsedTime) * ROTATION_SPEED, 0, 1, 0);
 			ducky->Display();
 
 			break;
@@ -123,7 +122,7 @@ void Beauty::Display()
 		case RAIL_GUN:
 			glTranslatef(GUN_POSITION.x, GUN_POSITION.y, GUN_POSITION.z);
 			glRotatef(VIEW_TILT, 1, 0, 0);
-			glRotatef(realElapsedTime * ROTATION_SPEED, 0, 1, 0);
+			glRotatef(GLfloat(realElapsedTime) * ROTATION_SPEED, 0, 1, 0);
 			railgun->Display();
 
 			break;
@@ -132,7 +131,7 @@ void Beauty::Display()
 			glColor3f(1, 0, 0);
 			glTranslatef(BALLOON_POSITION.x, BALLOON_POSITION.y, BALLOON_POSITION.z);
 			glRotatef(VIEW_TILT, 1, 0, 0);
-			glRotatef(realElapsedTime * ROTATION_SPEED, 0, 1, 0);
+			glRotatef(GLfloat(realElapsedTime) * ROTATION_SPEED, 0, 1, 0);
 			balloon->Display();
 
 			break;
@@ -144,5 +143,4 @@ void Beauty::Display()
 	}
 
 	glPopMatrix();
-
 }

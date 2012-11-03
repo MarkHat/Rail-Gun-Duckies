@@ -1,5 +1,18 @@
 #include "game.h"
 
+const char * SCORE_TEXT = "Score: ";
+const char * DUCKIES_LEFT_TEXT = "Duckies left: ";
+const char * CAMERA_MODE_TEXT = "Camera mode: ";
+
+const glm::vec3 SCORE_TEXT_POSITION = glm::vec3(10, 35, -1);
+const glm::vec3 DUCKIES_LEFT_TEXT_POSITION = glm::vec3(10, 10, -1);
+const glm::vec3 CAMERA_MODE_TEXT_POSITION = glm::vec3(10, 85, -1);
+
+const GLfloat SCORE_TEXT_SCALE = 0.12;
+const GLfloat DUCKIES_LEFT_TEXT_SCALE = 0.12;
+const GLfloat CAMERA_MODE_TEXT_SCALE = 0.12;
+const GLfloat BALLOON_TEXT_SIZE = 0.01;
+
 enum Mode
 {
 	MANUAL,
@@ -11,14 +24,12 @@ enum CameraModes
 {
 	FIXED_POSITION,
 	REORIENT,
-	FIRST_PERSON
+	THIRD_PERSON,
+	FIRST_PERSON,
 };
 
 int Game::score = 0;
 int Game::duckiesLeft = 3;
-
-double Game::pausedTime = 0;
-double Game::difference = 0;
 
 int Game::windowWidth = 800;
 int Game::windowHeight = 600;
@@ -58,8 +69,8 @@ void Game::ToggleDebug()
 	blueBalloon->ToggleDebug();
 }
 
-void Game::CycleCameraMode(){
-	
+void Game::CycleCameraMode()
+{
 	switch (cameraMode)
 	{
 		case FIXED_POSITION:
@@ -67,6 +78,10 @@ void Game::CycleCameraMode(){
 			break;
 
 		case REORIENT:
+			cameraMode = THIRD_PERSON;
+			break;
+
+		case THIRD_PERSON:
 			cameraMode = FIRST_PERSON;
 			break;
 
@@ -105,6 +120,15 @@ void Game::MouseMotionFunc(int x, int y, int windowWidth, int windowHeight)
 		railgun->UpdateYaw(x, windowWidth);
 		railgun->UpdatePitch(y, windowHeight);
 	}
+}
+
+void Game::DisplayOrthoText(const char * text, glm::vec3 position, GLfloat scale)
+{
+	glPushMatrix();
+	glTranslatef(position.x, position.y, position.z);
+	glScalef(scale, scale, 1.0);
+	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) text);
+	glPopMatrix();
 }
 
 void Game::DisplayXYZ()
@@ -274,58 +298,104 @@ void Game::HandleCollisions()
 	}
 }
 
+int Game::EstimateTargetPitch(float xDifference, float yDifference, float zDifference, float targetY)
+{
+	float topDownDistance = glm::sqrt(xDifference * xDifference + zDifference * zDifference);
+	float duckyInitialY = ducky->GetNewPosition().y;
+
+	// initially, just point the gun straight at the target balloon
+	int targetPitch = glm::atan(yDifference / topDownDistance) / radianConversion;
+	
+	float verticalSpeed = 0;
+	float horizontalSpeed = 0;
+	int framesToTarget = 0;
+	float duckyYAtTarget = 0;
+	
+	// this loop calculates the 
+	while (duckyYAtTarget < targetY)
+	{
+		// note: the velocities here are per frame rather than per second
+		verticalSpeed = glm::sin(targetPitch * radianConversion) * launchSpeed / 60;
+		horizontalSpeed = glm::cos(targetPitch * radianConversion) * launchSpeed / 60;
+		framesToTarget = int(topDownDistance / horizontalSpeed);
+		duckyYAtTarget = duckyInitialY;
+
+		for (int i = 0; i < framesToTarget; i++)
+		{
+			duckyYAtTarget += verticalSpeed;
+			verticalSpeed += gravity / 60;
+		}
+
+		targetPitch++;
+	}
+
+	return targetPitch;
+}
+
 void Game::AutomateRailgun()
 {
-	glm::vec3 railgunPosition = railgun->GetPosition();
-	glm::vec3 targetPosition;
-
-	if (!redHit)
+	// if the railgun hasn't acquired a target, compute its target
+	if (!railgun->IsAnimating())
 	{
-		targetPosition = redBalloon->GetPosition();
+		glm::vec3 railgunPosition = railgun->GetPosition();
+		glm::vec3 targetPosition;
+
+		if (!redHit)
+		{
+			targetPosition = redBalloon->GetPosition();
+		}
+		else if (!greenHit)
+		{
+			targetPosition = greenBalloon->GetPosition();
+		}
+		else if (!blueHit)
+		{
+			targetPosition = blueBalloon->GetPosition();
+		}
+
+		float xDifference = targetPosition.x - railgunPosition.x;
+		float yDifference = targetPosition.y - railgunPosition.y;
+		float zDifference = targetPosition.z - railgunPosition.z;
+
+		float targetYaw = glm::tan(xDifference / zDifference) / radianConversion;
+		float targetPitch = EstimateTargetPitch(xDifference, yDifference, zDifference, targetPosition.y);
+
+		railgun->SetTargetYaw(targetYaw);
+		railgun->SetTargetPitch(targetPitch);
+
+		railgun->SetAnimating();
 	}
-	else if (!greenHit)
+	// if the railgun has a target, animate it
+	else
 	{
-		targetPosition = greenBalloon->GetPosition();
+		railgun->MoveTowardsTarget();
+
+		// check if the railgun has finished animating
+		if (!railgun->IsAnimating())
+		{
+			FireDucky();
+		}
 	}
-	else if (!blueHit)
-	{
-		targetPosition = blueBalloon->GetPosition();
-	}
-
-	float xDifference = targetPosition.x - railgunPosition.x;
-	float yDifference = targetPosition.y - railgunPosition.y;
-	float zDifference = targetPosition.z - railgunPosition.z;
-
-	float yaw = glm::tan(xDifference / zDifference) / radianConversion;
-	railgun->SetYaw(yaw);
-
-	FireDucky();
 }
 
 void Game::Update(bool paused)
 {
-
 	oldElapsedTime = newElapsedTime;
 	newElapsedTime = (double) glutGet(GLUT_ELAPSED_TIME) / 1000.0;
-	if (paused){
 
-	pausedTime += difference;
+	double difference = newElapsedTime - oldElapsedTime;
 
-	}
-
-
-	else{
-
-	difference = newElapsedTime - (oldElapsedTime + pausedTime);
 	if (mode == AUTOMATED)
 	{
-		AutomateRailgun();
+		if (!duckyFired)
+		{
+			AutomateRailgun();
+		}
 	}
 
 	if (duckyFired)
 	{
-
-		ducky->Update(difference, gravity);
+		ducky->Update(difference, launchSpeed, gravity);
 		HandleCollisions();
 
 		// check if new balloons should be generated
@@ -333,7 +403,6 @@ void Game::Update(bool paused)
 		{
 			ResetBalloons();
 		}
-	}
 	}
 }
 
@@ -353,6 +422,8 @@ void Game::DisplayDucky()
 	}
 	else
 	{
+		/*
+		// compute the angle tangent to the ducky's flight path
 		GLfloat angleX = -glm::asin(duckyVelocity.x / launchSpeed) / radianConversion;
 		GLfloat angleY = glm::asin(duckyVelocity.y / launchSpeed) / radianConversion;
 		GLfloat angleZ = -glm::acos(duckyVelocity.z / launchSpeed) / radianConversion;
@@ -360,9 +431,19 @@ void Game::DisplayDucky()
 		glRotatef(angleX, 0, 1, 0);
 		glRotatef(angleY, 0, 0, 1);
 		//glRotatef(angleZ, 1, 0, 0);
+		*/
+
+		glm::vec3 duckyRotation = ducky->GetRotation();
+
+		// note: x and z are reversed here because the ducky has been rotated 90 degrees to face forward
+		glRotatef(duckyRotation.x, 0, 1, 0);
+		glRotatef(duckyRotation.y, 0, 0, 1);
+		glRotatef(duckyRotation.z, 1, 0, 0);
 	}
 	
+	// move the ducky to the end of the gun
 	glTranslatef(-2, 0, 0);
+
 	ducky->Display();
 	glPopMatrix();
 }
@@ -413,33 +494,27 @@ void Game::DisplayBalloons()
 	}
 }
 
-void Game::DisplayText(char * text)
-{
-	glPushMatrix();
-	glScaled(0.01, 0.01, 0.01);
-	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) text);
-	glPopMatrix();
-}
-
-void Game::DisplayBalloonText()
+void Game::DisplayBalloonValues()
 {
 	glm::vec3 redPosition = redBalloon->GetPosition();
 	glm::vec3 greenPosition = greenBalloon->GetPosition();
 	glm::vec3 bluePosition = blueBalloon->GetPosition();
 
 	float radiusMultiplier = 1.25;
-	float redTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '1') * 0.005;
-	float greenTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '2') * 0.005;
-	float blueTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '3') * 0.005;
+	float redTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '1') * BALLOON_TEXT_SIZE / 2;
+	float greenTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '2') * BALLOON_TEXT_SIZE / 2;
+	float blueTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '3') * BALLOON_TEXT_SIZE / 2;
 
 	glPushMatrix();
+	glDisable(GL_LIGHTING);
 	glColor3f(1, 1, 1);
 
 	if (!redHit)
 	{
 		glPushMatrix();
 		glTranslatef(redPosition.x - redTextHalfWidth, redPosition.y + redBalloon->GetRadius() * radiusMultiplier, redPosition.z);
-		DisplayText("1");
+		glScaled(BALLOON_TEXT_SIZE, BALLOON_TEXT_SIZE, BALLOON_TEXT_SIZE);
+		glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) "1");
 		glPopMatrix();
 	}
 
@@ -447,18 +522,21 @@ void Game::DisplayBalloonText()
 	{
 		glPushMatrix();
 		glTranslatef(greenPosition.x - greenTextHalfWidth, greenPosition.y + greenBalloon->GetRadius() * radiusMultiplier, greenPosition.z);
-		DisplayText("2");
+		glScaled(0.01, 0.01, 0.01);
+		glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) "2");
 		glPopMatrix();
 	}
 
 	if (!blueHit)
 	{
 		glPushMatrix();
-		glTranslatef(bluePosition.x - blueTextHalfWidth, bluePosition.y + blueBalloon->GetRadius() * radiusMultiplier, bluePosition.z);
-		DisplayText("3");
+		glTranslatef(bluePosition.x - blueTextHalfWidth, bluePosition.y + blueBalloon->GetRadius() * radiusMultiplier, bluePosition.z);	
+		glScaled(0.01, 0.01, 0.01);
+		glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) "3");
 		glPopMatrix();
 	}
 	
+	glEnable(GL_LIGHTING);
 	glPopMatrix();
 }
 
@@ -470,7 +548,7 @@ void Game::SetWindowDimensions(int width, int height)
 
 char * Game::ConvertToString(int value)
 {
-	char text[20];
+	char text[10];
 	
 	// note: this was the easiest way I could find to convert an integer to a string
 	sprintf(text, "%d", value);
@@ -478,11 +556,78 @@ char * Game::ConvertToString(int value)
 	return text;
 }
 
+char * Game::AssignCameraModeText()
+{
+	char * text;
+
+	switch (cameraMode)
+	{
+		case FIXED_POSITION:
+			text = "Fixed";
+			break;
+
+		case REORIENT:
+			text = "Reorient";
+			break;
+
+		case THIRD_PERSON:
+			text = "Third Person";
+			break;
+
+		case FIRST_PERSON:
+			text = "First Person";
+			break;
+	}
+
+	return text;
+}
+
+void Game::DisplayScore()
+{
+	DisplayOrthoText(SCORE_TEXT, SCORE_TEXT_POSITION, SCORE_TEXT_SCALE);
+	
+	// display the actual value
+	// note: I'm calculating the text width here because it wasn't working as a constant
+	int scoreTextWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, 'a') * SCORE_TEXT_SCALE * strlen(SCORE_TEXT);
+	char * scoreValueText = ConvertToString(score);
+	glm::vec3 scoreValuePosition = glm::vec3(SCORE_TEXT_POSITION.x + scoreTextWidth,
+											 SCORE_TEXT_POSITION.y, SCORE_TEXT_POSITION.z);
+
+	DisplayOrthoText(scoreValueText, scoreValuePosition, SCORE_TEXT_SCALE);
+}
+
+void Game::DisplayDuckiesLeft()
+{
+	DisplayOrthoText(DUCKIES_LEFT_TEXT, DUCKIES_LEFT_TEXT_POSITION, DUCKIES_LEFT_TEXT_SCALE);
+	
+	// display the actual value
+	// note: I'm calculating the text width here because it wasn't working as a constant
+	int duckiesLeftTextWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, 'a') * DUCKIES_LEFT_TEXT_SCALE *
+							   strlen(DUCKIES_LEFT_TEXT);
+	char * duckiesLeftValueText = ConvertToString(duckiesLeft);
+	glm::vec3 duckiesLeftValuePosition = glm::vec3(DUCKIES_LEFT_TEXT_POSITION.x + duckiesLeftTextWidth,
+												   DUCKIES_LEFT_TEXT_POSITION.y, DUCKIES_LEFT_TEXT_POSITION.z);
+
+	DisplayOrthoText(duckiesLeftValueText, duckiesLeftValuePosition, SCORE_TEXT_SCALE);
+}
+
+void Game::DisplayCameraMode()
+{
+	DisplayOrthoText(CAMERA_MODE_TEXT, CAMERA_MODE_TEXT_POSITION, CAMERA_MODE_TEXT_SCALE);
+	
+	// display the actual value
+	// note: I'm calculating the text width here because it wasn't working as a constant
+	int cameraModeTextWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, 'a') * CAMERA_MODE_TEXT_SCALE *
+							  strlen(CAMERA_MODE_TEXT);
+	char * cameraModeValueText = AssignCameraModeText();
+	glm::vec3 cameraModeValuePosition = glm::vec3(CAMERA_MODE_TEXT_POSITION.x + cameraModeTextWidth,
+												  CAMERA_MODE_TEXT_POSITION.y, CAMERA_MODE_TEXT_POSITION.z);
+
+	DisplayOrthoText(cameraModeValueText, cameraModeValuePosition, CAMERA_MODE_TEXT_SCALE);
+}
+
 void Game::DisplayGameInfo()
 {
-	char scoreText[255] = "Score: ";
-	char duckiesText[255] = "Duckies left: ";
-
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 
@@ -492,22 +637,30 @@ void Game::DisplayGameInfo()
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
+	glDisable(GL_LIGHTING);
 
 	glLoadIdentity();
 	glColor3f(1, 1, 1);
 
+	DisplayScore();
+	DisplayDuckiesLeft();
+	DisplayCameraMode();
+
+	/*
 	glPushMatrix();
 	glTranslatef(10, 10, -5.5);
-	glScalef(0.15, 0.15, 1.0);
+	glScalef(GAME_INFO_TEXT_SIZE, GAME_INFO_TEXT_SIZE, 1.0);
 	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) strcat(duckiesText, ConvertToString(duckiesLeft)));
 	glPopMatrix();
 
 	glPushMatrix();
 	glTranslatef(10, glutStrokeHeight(GLUT_STROKE_MONO_ROMAN) * 0.15 + 20, -5.5);
-	glScalef(0.15, 0.15, 1.0);
+	glScalef(GAME_INFO_TEXT_SIZE, GAME_INFO_TEXT_SIZE, 1.0);
 	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) strcat(scoreText, ConvertToString(score)));
 	glPopMatrix();
+	*/
 
+	glEnable(GL_LIGHTING);
 	glPopMatrix();
 
 	glMatrixMode(GL_PROJECTION);
@@ -517,27 +670,33 @@ void Game::DisplayGameInfo()
 
 void Game::SetCamera()
 {	
-	double xLookAt = 0;
-	double yLookAt = 0;
+	glm::vec3 duckyPosition = ducky->GetNewPosition();
+	glm::vec3 duckyHeadPosition = ducky->GetHeadPosition();
 
 	switch (cameraMode)
 	{
 		case FIXED_POSITION:
-			gluLookAt(0, 0, 0, 0, 0, -5, 0, 1, 0);
+			gluLookAt(0, 0, 0,
+					  0, 0, -5,
+					  0, 1, 0);
 			break;
 
 		case REORIENT:
+			gluLookAt(0, 0, 0,
+					  duckyPosition.x, duckyPosition.y, duckyPosition.z,
+					  0, 1, 0);
+			break;
 
-			xLookAt = glm::tan(railgun->GetYaw()*radianConversion)*-9;
-			yLookAt = glm::tan(railgun->GetPitch()*radianConversion) *9;
-
-			gluLookAt(0, 0, 0 , xLookAt, yLookAt, -6, 0, 1, 0);
+		case THIRD_PERSON:
+			gluLookAt(duckyPosition.x, duckyPosition.y, duckyPosition.z + 0.5,
+					  duckyPosition.x, duckyPosition.y, duckyPosition.z,
+					  0, 1, 0);
 			break;
 
 		case FIRST_PERSON:
-			glm::vec3 duckyPosition = ducky->GetNewPosition();
-			gluLookAt(duckyPosition.x, duckyPosition.y, duckyPosition.z, duckyPosition.x, duckyPosition.y, duckyPosition.z - .5, 0, 1, 0);
-
+			gluLookAt(duckyHeadPosition.x, duckyHeadPosition.y, duckyHeadPosition.z,
+					  duckyHeadPosition.x, duckyHeadPosition.y, duckyHeadPosition.z - 0.1,
+					  0, 1, 0);
 			break;
 	}
 }
@@ -551,7 +710,7 @@ void Game::Display()
 	DisplayDucky();
 	DisplayRailGun();
 	DisplayBalloons();
-	DisplayBalloonText();
+	DisplayBalloonValues();
 	DisplayGameInfo();
 	
 	if (debug)

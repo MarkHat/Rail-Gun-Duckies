@@ -1,17 +1,19 @@
 #include "pedestal.h"
 
+const int SLICES = 50;
+const int STACKS = 3;
+const GLfloat RADIUS = 6;
+const GLfloat HEIGHT = 1;
+
+const GLfloat RADIAN_CONVERSION = GLfloat(3.14159) / 180;
+const GLfloat NORMAL_LENGTH_SCALE = GLfloat(0.2);
+
 Pedestal::Pedestal()
 {
-	
 	debug = false;
 
-	slices = 50;
-	stacks = 3;
-	radius = 6;
-	height = 1;
-
-	numVaVertices = (slices + 1) * (stacks + 1);
-	numVaIndices = (slices + 1) * (stacks) * 6;
+	numVaVertices = (SLICES + 1) * (STACKS + 1);
+	numVaIndices = (SLICES + 1) * (STACKS) * 6;
 	numDebugVertices = numVaVertices * 2;
 	numDebugIndices = numDebugVertices;
 }
@@ -62,13 +64,11 @@ void Pedestal::Display()
 
 void Pedestal::ComputeVaVertices()
 {
-	float pi = 3.14159;
-	float radianConversion = pi / 180;
-	float angleIncrement = 360 / slices * radianConversion;
+	float angleIncrement = 360 / SLICES * RADIAN_CONVERSION;
 
-	for (int i = 0; i < stacks + 1; i++)
+	for (int i = 0; i < STACKS + 1; i++)
 	{
-		for (int j = 0; j < slices + 1; j++)
+		for (int j = 0; j < SLICES + 1; j++)
 		{
 			if (i == 0)
 			{
@@ -79,14 +79,14 @@ void Pedestal::ComputeVaVertices()
 			else if (i == 3)
 			{
 				vaVertices.push_back(0);
-				vaVertices.push_back(height);
+				vaVertices.push_back(HEIGHT);
 				vaVertices.push_back(0);
 			}
 			else
 			{
-				vaVertices.push_back(cos(angleIncrement * j) * radius);
-				vaVertices.push_back((i - 1) * height);
-				vaVertices.push_back(sin(angleIncrement * j) * radius);
+				vaVertices.push_back(cos(angleIncrement * j) * RADIUS);
+				vaVertices.push_back((i - 1) * HEIGHT);
+				vaVertices.push_back(sin(angleIncrement * j) * RADIUS);
 			}
 		}
 	}
@@ -94,35 +94,35 @@ void Pedestal::ComputeVaVertices()
 
 void Pedestal::GenerateVaIndices()
 {
-	for (int i = 0; i < stacks; i++)
+	for (int i = 0; i < STACKS; i++)
 	{
-		for (int j = 0; j < slices + 1; j++)
+		for (int j = 0; j < SLICES + 1; j++)
 		{
 			// first triangle
-			vaIndices.push_back(i * (slices + 1) + j);
+			vaIndices.push_back(i * (SLICES + 1) + j);
 
-			if (j == slices)
+			if (j == SLICES)
 			{
-				vaIndices.push_back(i * (slices + 1));
+				vaIndices.push_back(i * (SLICES + 1));
 			}
 			else
 			{
-				vaIndices.push_back(i * (slices + 1) + j + 1);
+				vaIndices.push_back(i * (SLICES + 1) + j + 1);
 			}
 
-			vaIndices.push_back((i + 1) * (slices + 1) + j);
+			vaIndices.push_back((i + 1) * (SLICES + 1) + j);
 
 			// second triangle
-			vaIndices.push_back(i * (slices + 1) + j);
-			vaIndices.push_back((i + 1) * (slices + 1) + j);
+			vaIndices.push_back(i * (SLICES + 1) + j);
+			vaIndices.push_back((i + 1) * (SLICES + 1) + j);
 
 			if (j == 0)
 			{
-				vaIndices.push_back((i + 2) * (slices + 1) - 1);
+				vaIndices.push_back((i + 2) * (SLICES + 1) - 1);
 			}
 			else
 			{
-				vaIndices.push_back((i + 1) * (slices + 1) + j - 1);
+				vaIndices.push_back((i + 1) * (SLICES + 1) + j - 1);
 			}
 		}
 	}
@@ -130,9 +130,9 @@ void Pedestal::GenerateVaIndices()
 
 void Pedestal::ComputeVaNormals()
 {
-	for (int i = 0; i < stacks + 1; i++)
+	for (int i = 0; i < STACKS + 1; i++)
 	{
-		for (int j = 0; j < slices + 1; j++)
+		for (int j = 0; j < SLICES + 1; j++)
 		{
 			// bottom of the pedestal
 			if (i == 0)
@@ -151,7 +151,7 @@ void Pedestal::ComputeVaNormals()
 			// cylinder part
 			else
 			{
-				int vaIndex = (i * (slices + 1) + j) * 3;
+				int vaIndex = (i * (SLICES + 1) + j) * 3;
 				float magnitude = sqrt(vaVertices.at(vaIndex) * vaVertices.at(vaIndex) +
 									   vaVertices.at(vaIndex + 2) * vaVertices.at(vaIndex + 2));
 
@@ -171,9 +171,9 @@ void Pedestal::ComputeDebugVertices()
 		float vY = vaVertices.at(i * 3 + 1);
 		float vZ = vaVertices.at(i * 3 + 2);
 
-		float nX = vX + vaNormals.at(i * 3) * 0.2;
-		float nY = vY + vaNormals.at(i * 3 + 1) * 0.2;
-		float nZ = vZ + vaNormals.at(i * 3 + 2) * 0.2;
+		float nX = vX + vaNormals.at(i * 3) * NORMAL_LENGTH_SCALE;
+		float nY = vY + vaNormals.at(i * 3 + 1) * NORMAL_LENGTH_SCALE;
+		float nZ = vZ + vaNormals.at(i * 3 + 2) * NORMAL_LENGTH_SCALE;
 
 		debugVertices.push_back(vX);
 		debugVertices.push_back(vY);

@@ -4,8 +4,9 @@ const glm::vec3 BOUNDS = glm::vec3(1, 1, 1);
 
 const int SLICES = 25;
 const int STACKS = 25;
+const GLfloat RADIAN_CONVERSION = GLfloat(3.14159) / 180;
 
-const int WING_TILT = 10;
+const GLfloat WING_TILT = 10;
 const glm::vec3 WING_OFFSET = glm::vec3(0, 0.1, 0.5);
 const glm::vec3 WING_SCALE = glm::vec3(0.6, 0.3, 0.2);
 
@@ -15,8 +16,10 @@ const glm::vec3 HEAD_SCALE = glm::vec3(0.3, 0.3, 0.3);
 const glm::vec3 BEAK_COLOR = glm::vec3(1, 0.64, 0);
 const glm::vec3 BEAK_OFFSET = glm::vec3(0.55, 0.65, 0);
 const glm::vec3 BEAK_SCALE = glm::vec3(0.7, 0.7, 0.7);
+const GLfloat BEAK_BASE = GLfloat(0.1);
+const GLfloat BEAK_HEIGHT = GLfloat(0.5);
 
-const GLfloat EYE_RADIUS = 0.05;
+const GLfloat EYE_RADIUS = GLfloat(0.05);
 const glm::vec3 EYE_OFFSET = glm::vec3(0.5, 0.76, 0.15);
 
 Ducky::Ducky()
@@ -28,7 +31,9 @@ Ducky::Ducky()
 
 	oldPosition = glm::vec3(0, 0, 0);
 	newPosition = glm::vec3(0, 0, 0);
+	headPosition = glm::vec3(HEAD_OFFSET.x, HEAD_OFFSET.y, HEAD_OFFSET.z);
 	velocity = glm::vec3(0, 0, 0);
+	rotation = glm::vec3(0, 0, 0);
 }
 
 Ducky::~Ducky()
@@ -88,7 +93,9 @@ void Ducky::CreateDuckyDisplayList()
 	glTranslatef(BEAK_OFFSET.x, BEAK_OFFSET.y, BEAK_OFFSET.z);
 	glScalef(BEAK_SCALE.x, BEAK_SCALE.y, BEAK_SCALE.z);
 	glRotatef(90, 0, 1, 0);
-	gluCylinder(quadric, 0.1, 0, .5, SLICES, STACKS);
+
+	// reference: http://www.opengl.org/sdk/docs/man2/xhtml/gluCylinder.xml
+	gluCylinder(quadric, BEAK_BASE, 0, BEAK_HEIGHT, SLICES, STACKS);
 	glPopMatrix();
 
 	// right eye
@@ -205,9 +212,19 @@ glm::vec3 Ducky::GetNewPosition()
 	return newPosition;
 }
 
+glm::vec3 Ducky::GetHeadPosition()
+{
+	return headPosition;
+}
+
 glm::vec3 Ducky::GetVelocity()
 {
 	return velocity;
+}
+
+glm::vec3 Ducky::GetRotation()
+{
+	return rotation;
 }
 
 glm::vec3 Ducky::GetBounds()
@@ -221,6 +238,10 @@ void Ducky::SetPosition(GLfloat x, GLfloat y, GLfloat z)
 	newPosition.y = y;
 	newPosition.z = z;
 
+	headPosition.x = x + HEAD_OFFSET.x;
+	headPosition.y = y + HEAD_OFFSET.y;
+	headPosition.z = z + HEAD_OFFSET.z;
+
 	oldPosition.x = newPosition.x;
 	oldPosition.y = newPosition.y;
 	oldPosition.z = newPosition.z;
@@ -233,16 +254,26 @@ void Ducky::SetVelocity(GLfloat x, GLfloat y, GLfloat z)
 	velocity.z = z;
 }
 
-void Ducky::Update(double elapsedTime, GLfloat gravity)
+void Ducky::Update(double elapsedTime, GLfloat speed, GLfloat gravity)
 {
+	// update positions
 	oldPosition.x = newPosition.x;
 	oldPosition.y = newPosition.y;
 	oldPosition.y = newPosition.y;
 
-	newPosition.x += velocity.x * elapsedTime;
-	newPosition.y += velocity.y * elapsedTime;
-	newPosition.z += velocity.z * elapsedTime;
+	newPosition.x += velocity.x * GLfloat(elapsedTime);
+	newPosition.y += velocity.y * GLfloat(elapsedTime);
+	newPosition.z += velocity.z * GLfloat(elapsedTime);
 
-	// apply gravity
+	headPosition.x = newPosition.x + HEAD_OFFSET.x;
+	headPosition.y = newPosition.y + HEAD_OFFSET.y;
+	headPosition.z = newPosition.z + HEAD_OFFSET.z;
+
+	// update rotation according to the ducky's flight path
+	rotation.x = -glm::asin(velocity.x / speed) / RADIAN_CONVERSION;
+	rotation.y = glm::asin(velocity.y / speed) / RADIAN_CONVERSION;
+	//rotation.z = -glm::acos(velocity.z / speed) / RADIAN_CONVERSION;
+	rotation.z = 0;
+
 	velocity.y += gravity;
 }

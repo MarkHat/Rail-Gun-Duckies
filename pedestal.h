@@ -10,6 +10,7 @@ class Pedestal
 	public:
 		Pedestal();
 		~Pedestal();
+
 		void ToggleDebug();
 		void Display();
 
@@ -22,11 +23,6 @@ class Pedestal
 
 		vector<GLfloat> debugVertices;
 		vector<GLuint> debugIndices;
-
-		int slices;
-		int stacks;
-		float radius;
-		float height;
 
 		int numVaVertices;
 		int numVaIndices;

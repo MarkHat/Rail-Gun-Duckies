@@ -35,10 +35,6 @@ class Balloon
 		vector<GLfloat> debugVertices;
 		vector<GLuint> debugIndices;
 
-		int slices;
-		int stacks;
-		float radius;
-
 		glm::vec3 position;
 		glm::vec3 bounds;
 

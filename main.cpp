@@ -4,9 +4,6 @@
 #include "balloon.h"
 #include "beauty.h"
 #include "game.h"
-/*#include "al.h" 
-#include "alc.h" 
-#include "alut.h"*/
 
 const int FPS = 60;
 const int PERIOD = 1000 / FPS;
@@ -220,11 +217,6 @@ void KeyboardFunc(unsigned char c, int x, int y)
 		case 'p':
 		case 'P':
 			paused = !paused;
-			break;
-
-		case 'r':
-		case 'R':
-			Game::Replay();
 			break;
 	}
 }
