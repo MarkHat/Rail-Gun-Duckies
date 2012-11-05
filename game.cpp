@@ -1,5 +1,7 @@
 #include "game.h"
 
+const int FPS = 60;
+
 const char * SCORE_TEXT = "Score: ";
 const char * DUCKIES_LEFT_TEXT = "Duckies left: ";
 const char * CAMERA_MODE_TEXT = "Camera mode: ";
@@ -8,10 +10,35 @@ const glm::vec3 SCORE_TEXT_POSITION = glm::vec3(10, 35, -1);
 const glm::vec3 DUCKIES_LEFT_TEXT_POSITION = glm::vec3(10, 10, -1);
 const glm::vec3 CAMERA_MODE_TEXT_POSITION = glm::vec3(10, 85, -1);
 
-const GLfloat SCORE_TEXT_SCALE = 0.12;
-const GLfloat DUCKIES_LEFT_TEXT_SCALE = 0.12;
-const GLfloat CAMERA_MODE_TEXT_SCALE = 0.12;
-const GLfloat BALLOON_TEXT_SIZE = 0.01;
+const GLfloat SCORE_TEXT_SCALE = GLfloat(0.12);
+const GLfloat DUCKIES_LEFT_TEXT_SCALE = GLfloat(0.12);
+const GLfloat CAMERA_MODE_TEXT_SCALE = GLfloat(0.12);
+const GLfloat BALLOON_TEXT_SCALE = GLfloat(0.01);
+
+const GLfloat LAUNCH_SPEED = 30;
+const GLfloat RADIAN_CONVERSION = GLfloat(3.14159) / GLfloat(180.0);
+const GLfloat GRAVITY = GLfloat(-0.2);
+
+const glm::vec3 DUCKY_INITIAL_POSITION = glm::vec3(0, 0, -4);
+const glm::vec3 GUN_INITIAL_POSITION = glm::vec3(0, -1, -4);
+
+const int BALLOON_GEN_X_OFFSET = 15;
+const int BALLOON_GEN_Y_OFFSET = 5;
+const int BALLOON_GEN_Y_HEIGHT = 5;
+const int BALLOON_GEN_Z_OFFSET = 25;
+const int BALLOON_GEN_Z_LENGTH = 15;
+
+const int COLLISION_FAR_BOUNDARY = -80;
+const int COLLISION_TIME_SEGMENTS = 10;
+
+const int RED_BALLOON_VALUE = 1;
+const int GREEN_BALLOON_VALUE = 2;
+const int BLUE_BALLOON_VALUE = 3;
+const GLfloat BALLOON_TEXT_RADIUS_MULTIPLIER = 1.25;
+
+const char * RED_BALLOON_VALUE_TEXT = "1";
+const char * GREEN_BALLOON_VALUE_TEXT = "2";
+const char * BLUE_BALLOON_VALUE_TEXT = "3";
 
 enum Mode
 {
@@ -34,12 +61,6 @@ int Game::duckiesLeft = 3;
 int Game::windowWidth = 800;
 int Game::windowHeight = 600;
 
-glm::vec3 Game::duckyInitialPosition = glm::vec3(0, 0, -4);
-glm::vec3 Game::gunInitialPosition = glm::vec3(0, -1, -4);
-GLfloat Game::launchSpeed = 30;
-GLfloat Game::radianConversion = 3.14159 / 180;
-GLfloat Game::gravity = -0.2;
-
 enum Mode Game::mode = IDLE;
 enum CameraModes Game::cameraMode = FIXED_POSITION;
 
@@ -58,6 +79,9 @@ Balloon * Game::blueBalloon = new Balloon();
 bool Game::redHit = false;
 bool Game::greenHit = false;
 bool Game::blueHit = false;
+
+glm::vec3 Game::cameraPosition = glm::vec3(0, 0, 0);
+glm::vec3 Game::cameraLookAt = glm::vec3(0, 0, -1);
 
 void Game::ToggleDebug()
 {
@@ -91,7 +115,7 @@ void Game::CycleCameraMode()
 	}
 }
 
-void Game::CycleMode()
+void Game::CycleGameMode()
 {
 	switch (mode)
 	{
@@ -131,51 +155,43 @@ void Game::DisplayOrthoText(const char * text, glm::vec3 position, GLfloat scale
 	glPopMatrix();
 }
 
-void Game::DisplayXYZ()
+void Game::DisplayBalloonText(Balloon * balloon, const char * balloonText)
 {
+	glm::vec3 balloonPosition = balloon->GetPosition();
+
+	// position the text
+	// note: the text half-width is calculated here because it wasn't working as a constant
+	GLfloat textHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, 'a') * BALLOON_TEXT_SCALE / 2;
+
 	glPushMatrix();
-	glDisable(GL_LIGHTING);
+	glTranslatef(balloonPosition.x - textHalfWidth,
+				 balloonPosition.y + redBalloon->GetRadius() * BALLOON_TEXT_RADIUS_MULTIPLIER,
+				 balloonPosition.z);
 
-	glMatrixMode(GL_MODELVIEW);
-	glBegin(GL_LINES);
+	// orient the text to face the camera
+	float xDifference = balloonPosition.x - cameraPosition.x;
+	float zDifference = balloonPosition.z - cameraPosition.z;
+	float angle = atan(xDifference / zDifference) / RADIAN_CONVERSION;
 
-	glColor3f(1, 0, 0);
-	glVertex3f(0, 0, 0);
-	glVertex3f(1, 0, 0);
-	
-	glColor3f(0, 1, 0);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0, 1, 0);
-	
-	glColor3f(0, 0, 1);
-	glVertex3f(0, 0, 0);
-	glVertex3f(0, 0, 1);
+	glRotatef(angle, 0, 1, 0);
 
-	glEnd();
-
-	glEnable(GL_LIGHTING);
+	// scale and draw the text
+	glScaled(BALLOON_TEXT_SCALE, BALLOON_TEXT_SCALE, BALLOON_TEXT_SCALE);
+	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) balloonText);
 	glPopMatrix();
 }
 
-void Game::GenerateBalloons()
+void Game::RegenerateBalloons()
 {
-	GLfloat x = 0;
-	GLfloat y = 0;
-	GLfloat z = 0;
+	// note: the casts to GLfloat get rid of a few warnings
 
-	int xOffset = 15;
-	int yOffset = 5;
-	int yHeight = 5;
-	int zGunOffset = 25;
-	int zBalloonOffset = 15;
-	
-	srand(time(NULL));
+	srand((unsigned int)time(NULL));
 
 	for (int i = 0; i < 3; i++)
 	{
-		x = -xOffset + rand() % (xOffset * 2);
-		y = yOffset + (rand() % yHeight);
-		z = (zGunOffset + zBalloonOffset * i + rand() % zBalloonOffset) * -1;
+		GLfloat x = GLfloat(-BALLOON_GEN_X_OFFSET) + rand() % (BALLOON_GEN_X_OFFSET * 2);
+		GLfloat y = GLfloat(BALLOON_GEN_Y_OFFSET) + (rand() % BALLOON_GEN_Y_HEIGHT);
+		GLfloat z = (GLfloat(BALLOON_GEN_Z_OFFSET) + BALLOON_GEN_Z_LENGTH * i + rand() % BALLOON_GEN_Z_LENGTH) * -1;
 
 		switch (i)
 		{
@@ -197,7 +213,7 @@ void Game::GenerateBalloons()
 void Game::ResetGame()
 {
 	ResetDucky();
-	railgun->SetPosition(gunInitialPosition.x, gunInitialPosition.y, gunInitialPosition.z);
+	railgun->SetPosition(GUN_INITIAL_POSITION.x, GUN_INITIAL_POSITION.y, GUN_INITIAL_POSITION.z);
 	ResetBalloons();
 
 	score = 0;
@@ -206,7 +222,7 @@ void Game::ResetGame()
 
 void Game::ResetDucky()
 {
-	ducky->SetPosition(duckyInitialPosition.x, duckyInitialPosition.y, duckyInitialPosition.z);
+	ducky->SetPosition(DUCKY_INITIAL_POSITION.x, DUCKY_INITIAL_POSITION.y, DUCKY_INITIAL_POSITION.z);
 	ducky->SetVelocity(0, 0, 0);
 
 	duckyFired = false;
@@ -214,7 +230,7 @@ void Game::ResetDucky()
 
 void Game::ResetBalloons()
 {
-	GenerateBalloons();
+	RegenerateBalloons();
 
 	redHit = false;
 	greenHit = false;
@@ -245,7 +261,7 @@ bool Game::CheckDuckyBalloonCollision(glm::vec3 duckyTempPosition, Balloon * bal
 void Game::HandleCollisions()
 {
 	// destroy the ducky when it passes a certain z distance
-	if (ducky->GetNewPosition().z < -80) {
+	if (ducky->GetNewPosition().z < COLLISION_FAR_BOUNDARY) {
 		duckiesLeft--;
 
 		if (duckiesLeft == 0)
@@ -261,35 +277,34 @@ void Game::HandleCollisions()
 	{
 		glm::vec3 duckyOldPosition = ducky->GetOldPosition();
 		glm::vec3 duckyNewPosition = ducky->GetNewPosition();
-		int timeSegments = 10;
 
-		float xIncrement = (duckyNewPosition.x - duckyOldPosition.x) / timeSegments;
-		float zIncrement = (duckyNewPosition.z - duckyOldPosition.z) / timeSegments;
+		float xIncrement = (duckyNewPosition.x - duckyOldPosition.x) / COLLISION_TIME_SEGMENTS;
+		float zIncrement = (duckyNewPosition.z - duckyOldPosition.z) / COLLISION_TIME_SEGMENTS;
 
 		glm::vec3 duckyTempPosition = duckyOldPosition;
 
-		for (int i = 0; i < timeSegments; i++)
+		for (int i = 0; i < COLLISION_TIME_SEGMENTS; i++)
 		{
 			duckyTempPosition.x += xIncrement;
 			duckyTempPosition.z += zIncrement;
 
 			if (!redHit && CheckDuckyBalloonCollision(duckyTempPosition, redBalloon))
 			{
-				score += 1;
+				score += RED_BALLOON_VALUE;
 				redHit = true;
 
 				ResetDucky();
 			}
 			else if (!greenHit && CheckDuckyBalloonCollision(duckyTempPosition, greenBalloon))
 			{
-				score += 2;
+				score += GREEN_BALLOON_VALUE;
 				greenHit = true;
 
 				ResetDucky();
 			}
 			else if (!blueHit && CheckDuckyBalloonCollision(duckyTempPosition, blueBalloon))
 			{
-				score += 3;
+				score += BLUE_BALLOON_VALUE;
 				blueHit = true;
 
 				ResetDucky();
@@ -298,13 +313,13 @@ void Game::HandleCollisions()
 	}
 }
 
-int Game::EstimateTargetPitch(float xDifference, float yDifference, float zDifference, float targetY)
+GLfloat Game::EstimateTargetPitch(float xDifference, float yDifference, float zDifference, float targetY)
 {
 	float topDownDistance = glm::sqrt(xDifference * xDifference + zDifference * zDifference);
 	float duckyInitialY = ducky->GetNewPosition().y;
 
 	// initially, just point the gun straight at the target balloon
-	int targetPitch = glm::atan(yDifference / topDownDistance) / radianConversion;
+	GLfloat targetPitch = glm::atan(yDifference / topDownDistance) / RADIAN_CONVERSION;
 	
 	float verticalSpeed = 0;
 	float horizontalSpeed = 0;
@@ -315,26 +330,40 @@ int Game::EstimateTargetPitch(float xDifference, float yDifference, float zDiffe
 	while (duckyYAtTarget < targetY)
 	{
 		// note: the velocities here are per frame rather than per second
-		verticalSpeed = glm::sin(targetPitch * radianConversion) * launchSpeed / 60;
-		horizontalSpeed = glm::cos(targetPitch * radianConversion) * launchSpeed / 60;
+		verticalSpeed = glm::sin(targetPitch * RADIAN_CONVERSION) * LAUNCH_SPEED / 60;
+		horizontalSpeed = glm::cos(targetPitch * RADIAN_CONVERSION) * LAUNCH_SPEED / 60;
 		framesToTarget = int(topDownDistance / horizontalSpeed);
 		duckyYAtTarget = duckyInitialY;
 
 		for (int i = 0; i < framesToTarget; i++)
 		{
 			duckyYAtTarget += verticalSpeed;
-			verticalSpeed += gravity / 60;
+			verticalSpeed += GRAVITY / FPS;
 		}
 
 		targetPitch++;
 	}
+
+	// note: this formula was giving us too small a pitch
+	// reference: http://en.wikipedia.org/wiki/Trajectory_of_a_projectile
+
+	/*
+	float distance = sqrt(xDifference * xDifference + zDifference * zDifference);
+	float targetPitch = atan((LAUNCH_SPEED * LAUNCH_SPEED -
+							  sqrt(LAUNCH_SPEED * LAUNCH_SPEED * LAUNCH_SPEED * LAUNCH_SPEED - 
+								   GRAVITY * (GRAVITY * distance * distance + 
+											  2 * yDifference * LAUNCH_SPEED * LAUNCH_SPEED))) /
+							  (GRAVITY * distance));
+
+	return targetPitch / RADIAN_CONVERSION;
+	*/
 
 	return targetPitch;
 }
 
 void Game::AutomateRailgun()
 {
-	// if the railgun hasn't acquired a target, compute its target
+	// if the railgun hasn't acquired a target, compute its target yaw and pitch
 	if (!railgun->IsAnimating())
 	{
 		glm::vec3 railgunPosition = railgun->GetPosition();
@@ -357,8 +386,13 @@ void Game::AutomateRailgun()
 		float yDifference = targetPosition.y - railgunPosition.y;
 		float zDifference = targetPosition.z - railgunPosition.z;
 
-		float targetYaw = glm::tan(xDifference / zDifference) / radianConversion;
-		float targetPitch = EstimateTargetPitch(xDifference, yDifference, zDifference, targetPosition.y);
+		glm::vec3 directVector = glm::vec3(xDifference, 0, zDifference);
+		glm::vec3 zVector = glm::vec3(0, 0, zDifference);
+
+		GLfloat targetYaw = glm::atan(xDifference / zDifference) / RADIAN_CONVERSION;
+
+		// reference: http://en.wikipedia.org/wiki/Trajectory_of_a_projectile
+		GLfloat targetPitch = EstimateTargetPitch(xDifference, yDifference, zDifference, targetPosition.y);
 
 		railgun->SetTargetYaw(targetYaw);
 		railgun->SetTargetPitch(targetPitch);
@@ -381,7 +415,7 @@ void Game::AutomateRailgun()
 void Game::Update(bool paused)
 {
 	oldElapsedTime = newElapsedTime;
-	newElapsedTime = (double) glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+	newElapsedTime = double(glutGet(GLUT_ELAPSED_TIME)) / 1000;
 
 	double difference = newElapsedTime - oldElapsedTime;
 
@@ -395,7 +429,7 @@ void Game::Update(bool paused)
 
 	if (duckyFired)
 	{
-		ducky->Update(difference, launchSpeed, gravity);
+		ducky->Update(difference, LAUNCH_SPEED, GRAVITY);
 		HandleCollisions();
 
 		// check if new balloons should be generated
@@ -417,22 +451,11 @@ void Game::DisplayDucky()
 
 	if (!duckyFired)
 	{
-		glRotatef(railgun->GetPitch(), 0, 0, 1);
 		glRotatef(railgun->GetYaw(), 0, 1, 0);
+		glRotatef(railgun->GetPitch(), 0, 0, 1);
 	}
 	else
 	{
-		/*
-		// compute the angle tangent to the ducky's flight path
-		GLfloat angleX = -glm::asin(duckyVelocity.x / launchSpeed) / radianConversion;
-		GLfloat angleY = glm::asin(duckyVelocity.y / launchSpeed) / radianConversion;
-		GLfloat angleZ = -glm::acos(duckyVelocity.z / launchSpeed) / radianConversion;
-
-		glRotatef(angleX, 0, 1, 0);
-		glRotatef(angleY, 0, 0, 1);
-		//glRotatef(angleZ, 1, 0, 0);
-		*/
-
 		glm::vec3 duckyRotation = ducky->GetRotation();
 
 		// note: x and z are reversed here because the ducky has been rotated 90 degrees to face forward
@@ -454,8 +477,8 @@ void Game::DisplayRailGun()
 
 	glPushMatrix();
 	glTranslatef(railGunPosition.x, railGunPosition.y, railGunPosition.z);
-	glRotatef(railgun->GetPitch(), 1, 0, 0);
 	glRotatef(railgun->GetYaw(), 0, 1, 0);
+	glRotatef(railgun->GetPitch(), 1, 0, 0);
 	railgun->Display();
 	glPopMatrix();
 }
@@ -500,40 +523,23 @@ void Game::DisplayBalloonValues()
 	glm::vec3 greenPosition = greenBalloon->GetPosition();
 	glm::vec3 bluePosition = blueBalloon->GetPosition();
 
-	float radiusMultiplier = 1.25;
-	float redTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '1') * BALLOON_TEXT_SIZE / 2;
-	float greenTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '2') * BALLOON_TEXT_SIZE / 2;
-	float blueTextHalfWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, '3') * BALLOON_TEXT_SIZE / 2;
-
 	glPushMatrix();
 	glDisable(GL_LIGHTING);
 	glColor3f(1, 1, 1);
 
 	if (!redHit)
 	{
-		glPushMatrix();
-		glTranslatef(redPosition.x - redTextHalfWidth, redPosition.y + redBalloon->GetRadius() * radiusMultiplier, redPosition.z);
-		glScaled(BALLOON_TEXT_SIZE, BALLOON_TEXT_SIZE, BALLOON_TEXT_SIZE);
-		glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) "1");
-		glPopMatrix();
+		DisplayBalloonText(redBalloon, RED_BALLOON_VALUE_TEXT);
 	}
 
 	if (!greenHit)
 	{
-		glPushMatrix();
-		glTranslatef(greenPosition.x - greenTextHalfWidth, greenPosition.y + greenBalloon->GetRadius() * radiusMultiplier, greenPosition.z);
-		glScaled(0.01, 0.01, 0.01);
-		glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) "2");
-		glPopMatrix();
+		DisplayBalloonText(greenBalloon, GREEN_BALLOON_VALUE_TEXT);
 	}
 
 	if (!blueHit)
 	{
-		glPushMatrix();
-		glTranslatef(bluePosition.x - blueTextHalfWidth, bluePosition.y + blueBalloon->GetRadius() * radiusMultiplier, bluePosition.z);	
-		glScaled(0.01, 0.01, 0.01);
-		glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) "3");
-		glPopMatrix();
+		DisplayBalloonText(blueBalloon, BLUE_BALLOON_VALUE_TEXT);
 	}
 	
 	glEnable(GL_LIGHTING);
@@ -544,16 +550,6 @@ void Game::SetWindowDimensions(int width, int height)
 {
 	windowWidth = width;
 	windowHeight = height;
-}
-
-char * Game::ConvertToString(int value)
-{
-	char text[10];
-	
-	// note: this was the easiest way I could find to convert an integer to a string
-	sprintf(text, "%d", value);
-
-	return text;
 }
 
 char * Game::AssignCameraModeText()
@@ -587,9 +583,13 @@ void Game::DisplayScore()
 	DisplayOrthoText(SCORE_TEXT, SCORE_TEXT_POSITION, SCORE_TEXT_SCALE);
 	
 	// display the actual value
+	// note: this is easiest way I could find to convert an integer to a string
+	char scoreValueText[5];
+	sprintf_s(scoreValueText, "%d", score);
+
 	// note: I'm calculating the text width here because it wasn't working as a constant
-	int scoreTextWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, 'a') * SCORE_TEXT_SCALE * strlen(SCORE_TEXT);
-	char * scoreValueText = ConvertToString(score);
+	GLfloat scoreTextWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, 'a') * SCORE_TEXT_SCALE * strlen(SCORE_TEXT);
+	//char * scoreValueText = ConvertToString(score);
 	glm::vec3 scoreValuePosition = glm::vec3(SCORE_TEXT_POSITION.x + scoreTextWidth,
 											 SCORE_TEXT_POSITION.y, SCORE_TEXT_POSITION.z);
 
@@ -601,10 +601,13 @@ void Game::DisplayDuckiesLeft()
 	DisplayOrthoText(DUCKIES_LEFT_TEXT, DUCKIES_LEFT_TEXT_POSITION, DUCKIES_LEFT_TEXT_SCALE);
 	
 	// display the actual value
+	// note: this is easiest way I could find to convert an integer to a string
+	char duckiesLeftValueText[2];
+	sprintf_s(duckiesLeftValueText, "%d", duckiesLeft);
+
 	// note: I'm calculating the text width here because it wasn't working as a constant
-	int duckiesLeftTextWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, 'a') * DUCKIES_LEFT_TEXT_SCALE *
+	GLfloat duckiesLeftTextWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, 'a') * DUCKIES_LEFT_TEXT_SCALE *
 							   strlen(DUCKIES_LEFT_TEXT);
-	char * duckiesLeftValueText = ConvertToString(duckiesLeft);
 	glm::vec3 duckiesLeftValuePosition = glm::vec3(DUCKIES_LEFT_TEXT_POSITION.x + duckiesLeftTextWidth,
 												   DUCKIES_LEFT_TEXT_POSITION.y, DUCKIES_LEFT_TEXT_POSITION.z);
 
@@ -617,7 +620,7 @@ void Game::DisplayCameraMode()
 	
 	// display the actual value
 	// note: I'm calculating the text width here because it wasn't working as a constant
-	int cameraModeTextWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, 'a') * CAMERA_MODE_TEXT_SCALE *
+	GLfloat cameraModeTextWidth = glutStrokeWidth(GLUT_STROKE_MONO_ROMAN, 'a') * CAMERA_MODE_TEXT_SCALE *
 							  strlen(CAMERA_MODE_TEXT);
 	char * cameraModeValueText = AssignCameraModeText();
 	glm::vec3 cameraModeValuePosition = glm::vec3(CAMERA_MODE_TEXT_POSITION.x + cameraModeTextWidth,
@@ -646,20 +649,6 @@ void Game::DisplayGameInfo()
 	DisplayDuckiesLeft();
 	DisplayCameraMode();
 
-	/*
-	glPushMatrix();
-	glTranslatef(10, 10, -5.5);
-	glScalef(GAME_INFO_TEXT_SIZE, GAME_INFO_TEXT_SIZE, 1.0);
-	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) strcat(duckiesText, ConvertToString(duckiesLeft)));
-	glPopMatrix();
-
-	glPushMatrix();
-	glTranslatef(10, glutStrokeHeight(GLUT_STROKE_MONO_ROMAN) * 0.15 + 20, -5.5);
-	glScalef(GAME_INFO_TEXT_SIZE, GAME_INFO_TEXT_SIZE, 1.0);
-	glutStrokeString(GLUT_STROKE_MONO_ROMAN, (const unsigned char *) strcat(scoreText, ConvertToString(score)));
-	glPopMatrix();
-	*/
-
 	glEnable(GL_LIGHTING);
 	glPopMatrix();
 
@@ -676,29 +665,67 @@ void Game::SetCamera()
 	switch (cameraMode)
 	{
 		case FIXED_POSITION:
-			gluLookAt(0, 0, 0,
-					  0, 0, -5,
-					  0, 1, 0);
+			cameraPosition.x = 0;
+			cameraPosition.y = 0;
+			cameraPosition.z = 0;
+
+			cameraLookAt.x = 0;
+			cameraLookAt.y = 0;
+			cameraLookAt.z = -1;
+
 			break;
 
 		case REORIENT:
-			gluLookAt(0, 0, 0,
-					  duckyPosition.x, duckyPosition.y, duckyPosition.z,
-					  0, 1, 0);
+			cameraPosition.x = 0;
+			cameraPosition.y = 0;
+			cameraPosition.z = 0;
+
+			cameraLookAt.x = duckyPosition.x;
+			cameraLookAt.y = duckyPosition.y;
+			cameraLookAt.z = duckyPosition.z;
+
 			break;
 
 		case THIRD_PERSON:
-			gluLookAt(duckyPosition.x, duckyPosition.y, duckyPosition.z + 0.5,
-					  duckyPosition.x, duckyPosition.y, duckyPosition.z,
-					  0, 1, 0);
+			cameraPosition.x = duckyPosition.x;
+			cameraPosition.y = duckyPosition.y;
+			cameraPosition.z = duckyPosition.z + GLfloat(0.5);
+
+			cameraLookAt.x = duckyPosition.x;
+			cameraLookAt.y = duckyPosition.y;
+			cameraLookAt.z = duckyPosition.z;
+
 			break;
 
 		case FIRST_PERSON:
-			gluLookAt(duckyHeadPosition.x, duckyHeadPosition.y, duckyHeadPosition.z,
-					  duckyHeadPosition.x, duckyHeadPosition.y, duckyHeadPosition.z - 0.1,
-					  0, 1, 0);
+			cameraPosition.x = duckyHeadPosition.x;
+			cameraPosition.y = duckyHeadPosition.y;
+			cameraPosition.z = duckyHeadPosition.z;
+
+			glm::vec3 duckyVelocity = ducky->GetVelocity();
+
+			// check if the ducky is sitting on the railgun
+			if (!duckyFired)
+			{
+				// reorient the camera to face the end of the gun
+				cameraLookAt.x = duckyHeadPosition.x + -sin(railgun->GetYaw() * RADIAN_CONVERSION);
+				cameraLookAt.y = duckyHeadPosition.y + sin(railgun->GetPitch() * RADIAN_CONVERSION);
+				cameraLookAt.z = duckyHeadPosition.z + -cos(railgun->GetYaw() * RADIAN_CONVERSION);
+			}
+			else
+			{
+				// reorient the camera to face tangent to the ducky's flight path
+				cameraLookAt.x = duckyHeadPosition.x + duckyVelocity.x;
+				cameraLookAt.y = duckyHeadPosition.y + duckyVelocity.y;
+				cameraLookAt.z = duckyHeadPosition.z + duckyVelocity.z;
+			}
+
 			break;
 	}
+
+	gluLookAt(cameraPosition.x, cameraPosition.y, cameraPosition.z,
+			  cameraLookAt.x, cameraLookAt.y, cameraLookAt.z,
+			  0, 1, 0);
 }
 
 void Game::Display()
@@ -707,16 +734,16 @@ void Game::Display()
 
 	SetCamera();
 
-	DisplayDucky();
+	// in first-person, the ducky isn't drawn
+	if (cameraMode != FIRST_PERSON)
+	{
+		DisplayDucky();
+	}
+
 	DisplayRailGun();
 	DisplayBalloons();
 	DisplayBalloonValues();
 	DisplayGameInfo();
-	
-	if (debug)
-	{
-		DisplayXYZ();
-	}
 
 	glPopMatrix();
 }
@@ -727,9 +754,9 @@ void Game::FireDucky()
 	{
 		duckyFired = true;
 
-		GLfloat velocityX = -glm::sin(railgun->GetYaw() * radianConversion) * launchSpeed;
-		GLfloat velocityY = glm::sin(railgun->GetPitch() * radianConversion) * launchSpeed;
-		GLfloat velocityZ = -glm::cos(railgun->GetPitch() * radianConversion) * launchSpeed;
+		GLfloat velocityX = -glm::sin(railgun->GetYaw() * RADIAN_CONVERSION) * LAUNCH_SPEED;
+		GLfloat velocityY = glm::sin(railgun->GetPitch() * RADIAN_CONVERSION) * LAUNCH_SPEED;
+		GLfloat velocityZ = -glm::cos(railgun->GetPitch() * RADIAN_CONVERSION) * LAUNCH_SPEED;
 
 		ducky->SetVelocity(velocityX, velocityY, velocityZ);
 	}
@@ -738,11 +765,15 @@ void Game::FireDucky()
 		// in manual mode, the ducky can be destroyed mid-flight
 		if (mode == MANUAL)
 		{
-			ResetDucky();
 			duckiesLeft--;
+
 			if (duckiesLeft == 0)
 			{
 				ResetGame();
+			}
+			else
+			{
+				ResetDucky();
 			}
 		}
 	}

@@ -36,7 +36,6 @@ class Balloon
 		vector<GLuint> debugIndices;
 
 		glm::vec3 position;
-		glm::vec3 bounds;
 
 		int numVaVertices;
 		int numVaIndices;

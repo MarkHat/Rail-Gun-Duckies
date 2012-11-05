@@ -30,10 +30,10 @@ class RailGun
 	private:
 		GLuint railgunDisplayList;
 
-		float yaw;
-		float pitch;
-		float targetYaw;
-		float targetPitch;
+		GLfloat yaw;
+		GLfloat pitch;
+		GLfloat targetYaw;
+		GLfloat targetPitch;
 		glm::vec3 position;
 
 		float yawIncrement;

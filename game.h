@@ -11,12 +11,14 @@
 class Game 
 {
 	public:
+		static void ToggleDebug();
 		static void Update(bool paused);
 		static void Display();
-		static void ToggleDebug();
-		static void CycleMode();
+
 		static void MouseMotionFunc(int x, int y, int windowWidth, int windowHeight);
 		static void FireDucky();
+
+		static void CycleGameMode();
 		static void CycleCameraMode();
 		static void SetWindowDimensions(int width, int height);
 
@@ -27,12 +29,6 @@ class Game
 
 		static int windowWidth;
 		static int windowHeight;
-
-		static glm::vec3 duckyInitialPosition;
-		static glm::vec3 gunInitialPosition;
-		static GLfloat launchSpeed;
-		static GLfloat radianConversion;
-		static GLfloat gravity;
 
 		static enum Mode mode;
 		static enum CameraModes cameraMode;
@@ -53,12 +49,15 @@ class Game
 		static double oldElapsedTime;
 		static double newElapsedTime;
 
+		static glm::vec3 cameraPosition;
+		static glm::vec3 cameraLookAt;
+
 		static void SetCamera();
-		static char * ConvertToString(int value);
 		static char * AssignCameraModeText();
 
 		static void DisplayOrthoText(const char * text, glm::vec3 position, GLfloat scale);
-		static void DisplayXYZ();
+		static void DisplayBalloonText(Balloon * balloon, const char * balloonText);
+
 		static void DisplayDucky();
 		static void DisplayRailGun();
 		static void DisplayBalloons();
@@ -68,7 +67,7 @@ class Game
 		static void DisplayDuckiesLeft();
 		static void DisplayCameraMode();
 
-		static void GenerateBalloons();
+		static void RegenerateBalloons();
 		static void ResetGame();
 		static void ResetDucky();
 		static void ResetBalloons();
@@ -76,6 +75,6 @@ class Game
 		static bool CheckDuckyBalloonCollision(glm::vec3 duckyTempPosition, Balloon * balloon);
 		static void HandleCollisions();
 
-		static int EstimateTargetPitch(float xDifference, float yDifference, float zDifference, float targetY);
+		static GLfloat EstimateTargetPitch(float xDifference, float yDifference, float zDifference, float targetY);
 		static void AutomateRailgun();
 };

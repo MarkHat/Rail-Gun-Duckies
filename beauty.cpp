@@ -84,7 +84,7 @@ void Beauty::DisplayXYZ()
 void Beauty::Update(bool paused)
 {
 	oldElapsedTime = newElapsedTime;
-	newElapsedTime = (double) glutGet(GLUT_ELAPSED_TIME) / 1000.0;
+	newElapsedTime = (double) glutGet(GLUT_ELAPSED_TIME) / 1000;
 
 	double difference = newElapsedTime - oldElapsedTime;
 

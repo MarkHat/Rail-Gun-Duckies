@@ -10,6 +10,9 @@ const GLfloat NORMAL_LENGTH_SCALE = GLfloat(0.2);
 
 Pedestal::Pedestal()
 {
+	pedestalDisplayList = -1;
+	debugDisplayList = -1;
+
 	debug = false;
 
 	numVaVertices = (SLICES + 1) * (STACKS + 1);
@@ -27,19 +30,16 @@ void Pedestal::ToggleDebug()
 	debug = !debug;
 }
 
-void Pedestal::Display()
+void Pedestal::CreatePedestalDisplayList()
 {
+	pedestalDisplayList = glGenLists(1);
+	glNewList(pedestalDisplayList, GL_COMPILE);
+
 	glMatrixMode(GL_MODELVIEW);
 
-	if (vaVertices.size() == 0)
-	{
-		ComputeVaVertices();
-		GenerateVaIndices();
-		ComputeVaNormals();
-
-		ComputeDebugVertices();
-		GenerateDebugIndices();
-	}
+	ComputeVaVertices();
+	GenerateVaIndices();
+	ComputeVaNormals();
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_NORMAL_ARRAY);
@@ -48,18 +48,56 @@ void Pedestal::Display()
 	glVertexPointer(3, GL_FLOAT, 0, &vaVertices[0]);
 	glNormalPointer(GL_FLOAT, 0, &vaNormals[0]);
 	glDrawElements(GL_TRIANGLES, numVaIndices, GL_UNSIGNED_INT, &vaIndices[0]);
-	
-	if (debug)
-	{
-		glColor3f(1, 1, 1);
-		glDisable(GL_LIGHTING);
-		glVertexPointer(3, GL_FLOAT, 0, &debugVertices[0]);
-		glDrawElements(GL_LINES, numDebugVertices, GL_UNSIGNED_INT, &debugIndices[0]);
-		glEnable(GL_LIGHTING);
-	}
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);
+
+	glEndList();
+}
+
+void Pedestal::CreateDebugDisplayList()
+{
+	debugDisplayList = glGenLists(1);
+	glNewList(debugDisplayList, GL_COMPILE);
+	
+	glMatrixMode(GL_MODELVIEW);
+
+	ComputeDebugVertices();
+	GenerateDebugIndices();
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glDisable(GL_LIGHTING);
+	glColor3f(1, 1, 1);
+
+	glVertexPointer(3, GL_FLOAT, 0, &debugVertices[0]);
+	glDrawElements(GL_LINES, numDebugVertices, GL_UNSIGNED_INT, &debugIndices[0]);
+
+	glEnable(GL_LIGHTING);
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+
+	glEndList();
+}
+
+void Pedestal::Display()
+{
+	if (pedestalDisplayList == -1)
+	{
+		CreatePedestalDisplayList();
+	}
+
+	if (debugDisplayList == -1)
+	{
+		CreateDebugDisplayList();
+	}
+
+	glCallList(pedestalDisplayList);
+
+	if (debug)
+	{
+		glCallList(debugDisplayList);
+	}
 }
 
 void Pedestal::ComputeVaVertices()

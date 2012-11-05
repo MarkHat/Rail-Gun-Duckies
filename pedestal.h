@@ -15,6 +15,9 @@ class Pedestal
 		void Display();
 
 	private:
+		GLuint pedestalDisplayList;
+		GLuint debugDisplayList;
+
 		bool debug;
 
 		vector<GLfloat> vaVertices;
@@ -35,4 +38,7 @@ class Pedestal
 
 		void ComputeDebugVertices();
 		void GenerateDebugIndices();
+
+		void CreatePedestalDisplayList();
+		void CreateDebugDisplayList();
 };

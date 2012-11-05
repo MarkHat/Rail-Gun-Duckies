@@ -8,7 +8,7 @@
 const int FPS = 60;
 const int PERIOD = 1000 / FPS;
 
-const GLfloat TEXT_SIZE = 0.12;
+const GLfloat TEXT_SIZE = GLfloat(0.12);
 const glm::vec3 MODE_TEXT_POSITION = glm::vec3(10, 10, -1);
 const glm::vec3 PAUSED_TEXT_POSITION = glm::vec3(10, 35, -1);
 
@@ -18,6 +18,19 @@ const char * BALLOON_BEAUTY_TEXT = "Balloon Beauty Mode";
 const char * MANUAL_TEXT = "Manual Mode";
 const char * AUTOMATED_TEXT = "Automated Mode";
 const char * PAUSED_TEXT = "(paused)";
+
+const int PERSPECTIVE_ANGLE = 45;
+const int PERSPECTIVE_NEAR = 1;
+const int PERSPECTIVE_FAR = 100;
+
+const GLfloat MAT_SPECULAR[] = {1, 1, 1, 1};
+const GLfloat MAT_SHININESS[] = {100};
+
+const GLfloat LIGHT_0_POSITION[] = {1, 0.5, 0.75, 0};
+const GLfloat LIGHT_1_POSITION[] = {-1, 0.5, 0.75, 0};
+const GLfloat LIGHT_AMBIENT[] = {0, 0, 0, 0};
+const GLfloat LIGHT_DIFFUSE[] = {GLfloat(0.4), GLfloat(0.4), GLfloat(0.4)};
+const GLfloat LIGHT_SPECULAR[] = {GLfloat(0.7), GLfloat(0.7), GLfloat(0.7)};
 
 int windowWidth = 800;
 int windowHeight = 600;
@@ -56,19 +69,20 @@ void CycleGameMode()
 
 		case BALLOON_BEAUTY:
 			Beauty::CycleMode();
-			Game::CycleMode();
+			Game::CycleGameMode();
 			glDisable(GL_LIGHT1);
 			gameMode = MANUAL;
 
 			break;
 
 		case MANUAL:
-			Game::CycleMode();
+			Game::CycleGameMode();
 			gameMode = AUTOMATED;
+
 			break;
 
 		case AUTOMATED:
-			Game::CycleMode();
+			Game::CycleGameMode();
 			glEnable(GL_LIGHT1);
 			gameMode = RUBBER_DUCKY_BEAUTY;
 
@@ -259,31 +273,23 @@ void TimerFunc(int value)
 
 void CreateLights()
 {
-	GLfloat matSpecular[] = {1, 1, 1, 1};
-	GLfloat matShininess[] = {100};
-
-	GLfloat light0Position[] = {1, 0.5, 0.75, 0};
-	GLfloat light1Position[] = {-1, 0.5, 0.75, 0};
-	GLfloat lightAmbient[] = {0, 0, 0, 0};
-	GLfloat lightDiffuse[] = {0.4, 0.4, 0.4};
-	GLfloat lightSpecular[] = {0.7, 0.7, 0.7};
-
 	glShadeModel(GL_SMOOTH);
 
 	// reference: http://www.opengl.org/sdk/docs/man/xhtml/glMaterial.xml
-	glMaterialfv(GL_FRONT, GL_SPECULAR, matSpecular);
-	glMaterialfv(GL_FRONT, GL_SHININESS, matShininess);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, MAT_SPECULAR);
+	glMaterialfv(GL_FRONT, GL_SHININESS, MAT_SHININESS);
 
 	// reference: http://www.opengl.org/sdk/docs/man/xhtml/glLight.xml
-	glLightfv(GL_LIGHT0, GL_POSITION, light0Position);
-	glLightfv(GL_LIGHT1, GL_POSITION, light1Position);
+	glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_0_POSITION);
+	glLightfv(GL_LIGHT1, GL_POSITION, LIGHT_1_POSITION);
 
-	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmbient);
-	glLightfv(GL_LIGHT1, GL_AMBIENT, lightAmbient);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDiffuse);
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, lightDiffuse);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, lightSpecular);
-	glLightfv(GL_LIGHT1, GL_SPECULAR, lightSpecular);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, LIGHT_AMBIENT);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, LIGHT_DIFFUSE);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, LIGHT_SPECULAR);
+
+	glLightfv(GL_LIGHT1, GL_AMBIENT, LIGHT_AMBIENT);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, LIGHT_DIFFUSE);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, LIGHT_SPECULAR);
 
 	glEnable(GL_COLOR_MATERIAL);
 	glEnable(GL_LIGHTING);
@@ -295,7 +301,7 @@ void CreateLights()
 int main(int argc, char * argv[])
 {
 	glutInit(&argc, argv);
-	glutInitWindowPosition(0,0);
+	glutInitWindowPosition(0, 0);
 	glutInitWindowSize(windowWidth, windowHeight);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
 	glutCreateWindow("Rail Gun Duckies");
@@ -304,7 +310,7 @@ int main(int argc, char * argv[])
 	glLoadIdentity();
 
 	// reference: http://www.opengl.org/sdk/docs/man/xhtml/gluPerspective.xml
-	gluPerspective(45, aspect, 1, 100);
+	gluPerspective(PERSPECTIVE_ANGLE, aspect, PERSPECTIVE_NEAR, PERSPECTIVE_FAR);
 	glEnable(GL_DEPTH_TEST);
 
 	wireFrame = false;

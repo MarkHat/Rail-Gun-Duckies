@@ -13,6 +13,8 @@ const GLfloat TORUS_OUTER_RADIUS = GLfloat(0.1);
 const int TORUS_SIDES = 20;
 const int TORUS_RINGS = 20;
 
+const glm::vec3 BOUNDS = glm::vec3(RADIUS * 2, RADIUS * (1 + BOTTOM_HALF_HEIGHT_SCALE), RADIUS * 2);
+
 Balloon::Balloon()
 {
 	vaDisplayListHandle = -1;
@@ -20,9 +22,7 @@ Balloon::Balloon()
 	boundingBoxDisplayListHandle = -1;
 
 	debug = false;
-
 	position = glm::vec3(0, 0, 0);
-	bounds = glm::vec3(RADIUS * 2, RADIUS * (2 + BOTTOM_HALF_HEIGHT_SCALE), RADIUS * 2);
 
 	numVaVertices = (SLICES + 1) * (STACKS + 1);
 	numVaIndices = (SLICES + 1) * (STACKS) * 6;
@@ -46,7 +46,7 @@ glm::vec3 Balloon::GetPosition()
 
 glm::vec3 Balloon::GetBounds()
 {
-	return bounds;
+	return BOUNDS;
 }
 
 void Balloon::SetPosition(GLfloat x, GLfloat y, GLfloat z)
@@ -124,7 +124,7 @@ void Balloon::CreateBoundingBoxDisplayList()
 
 	// the ducky's bounding box is just a rectangular prism surrounding the duck, so I'm
 	// simply computing each vertex manually
-	glm::vec3 halfBounds = glm::vec3(bounds.x / 2, bounds.y / 2, bounds.z / 2);
+	glm::vec3 halfBounds = glm::vec3(BOUNDS.x / 2, BOUNDS.y / 2, BOUNDS.z / 2);
 	float quarterRadius = RADIUS / 4;
 
 	glm::vec3 boxVertices[8] = {
