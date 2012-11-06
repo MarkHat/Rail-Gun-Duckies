@@ -2,6 +2,11 @@
 
 const int SLICES = 50;
 const int STACKS = 3;
+const int NUM_VA_VERTICES = (SLICES + 1) * (STACKS + 1);
+const int NUM_VA_INDICES = (SLICES + 1) * (STACKS) * 6;
+const int NUM_DEBUG_VERTICES = NUM_VA_VERTICES * 2;
+const int NUM_DEBUG_INDICES = NUM_DEBUG_VERTICES;
+
 const GLfloat RADIUS = 6;
 const GLfloat HEIGHT = 1;
 
@@ -14,11 +19,6 @@ Pedestal::Pedestal()
 	debugDisplayList = -1;
 
 	debug = false;
-
-	numVaVertices = (SLICES + 1) * (STACKS + 1);
-	numVaIndices = (SLICES + 1) * (STACKS) * 6;
-	numDebugVertices = numVaVertices * 2;
-	numDebugIndices = numDebugVertices;
 }
 
 Pedestal::~Pedestal()
@@ -37,6 +37,7 @@ void Pedestal::CreatePedestalDisplayList()
 
 	glMatrixMode(GL_MODELVIEW);
 
+	// these are only computed/generated once
 	ComputeVaVertices();
 	GenerateVaIndices();
 	ComputeVaNormals();
@@ -47,7 +48,7 @@ void Pedestal::CreatePedestalDisplayList()
 
 	glVertexPointer(3, GL_FLOAT, 0, &vaVertices[0]);
 	glNormalPointer(GL_FLOAT, 0, &vaNormals[0]);
-	glDrawElements(GL_TRIANGLES, numVaIndices, GL_UNSIGNED_INT, &vaIndices[0]);
+	glDrawElements(GL_TRIANGLES, NUM_VA_INDICES, GL_UNSIGNED_INT, &vaIndices[0]);
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_NORMAL_ARRAY);
@@ -62,6 +63,7 @@ void Pedestal::CreateDebugDisplayList()
 	
 	glMatrixMode(GL_MODELVIEW);
 
+	// these are only computed/generated once
 	ComputeDebugVertices();
 	GenerateDebugIndices();
 
@@ -71,7 +73,7 @@ void Pedestal::CreateDebugDisplayList()
 	glColor3f(1, 1, 1);
 
 	glVertexPointer(3, GL_FLOAT, 0, &debugVertices[0]);
-	glDrawElements(GL_LINES, numDebugVertices, GL_UNSIGNED_INT, &debugIndices[0]);
+	glDrawElements(GL_LINES, NUM_DEBUG_VERTICES, GL_UNSIGNED_INT, &debugIndices[0]);
 
 	glEnable(GL_LIGHTING);
 	glDisableClientState(GL_VERTEX_ARRAY);
@@ -102,24 +104,30 @@ void Pedestal::Display()
 
 void Pedestal::ComputeVaVertices()
 {
-	float angleIncrement = 360 / SLICES * RADIAN_CONVERSION;
+	// this splits the entire pedestal into SLICES + 1 slices. The calculation uses SLICES + 1 because
+	// one slice equals two pieces
+	float angleIncrement = 360 / (SLICES + 1) * RADIAN_CONVERSION;
 
+	// there will always be three slices
 	for (int i = 0; i < STACKS + 1; i++)
 	{
 		for (int j = 0; j < SLICES + 1; j++)
 		{
+			// the bottom-center "circle" is compressed down to a single point
 			if (i == 0)
 			{
 				vaVertices.push_back(0);
 				vaVertices.push_back(0);
 				vaVertices.push_back(0);
 			}
+			// the top-center "circle" is also compressed down to a single point
 			else if (i == 3)
 			{
 				vaVertices.push_back(0);
 				vaVertices.push_back(HEIGHT);
 				vaVertices.push_back(0);
 			}
+			// the other circles really are circles
 			else
 			{
 				vaVertices.push_back(cos(angleIncrement * j) * RADIUS);
@@ -132,6 +140,8 @@ void Pedestal::ComputeVaVertices()
 
 void Pedestal::GenerateVaIndices()
 {
+	// this functions behaves in exactly the same way as Balloon::GenerateVaIndices
+
 	for (int i = 0; i < STACKS; i++)
 	{
 		for (int j = 0; j < SLICES + 1; j++)
@@ -172,26 +182,29 @@ void Pedestal::ComputeVaNormals()
 	{
 		for (int j = 0; j < SLICES + 1; j++)
 		{
-			// bottom of the pedestal
+			// for the bottom of the pedestal, the normals point straight down
 			if (i == 0)
 			{
 				vaNormals.push_back(0);
 				vaNormals.push_back(-1);
 				vaNormals.push_back(0);
 			}
-			// top of the pedestal
+			// for the top of the pedestal, the normals point straight up
 			else if (i == 3)
 			{
 				vaNormals.push_back(0);
 				vaNormals.push_back(1);
 				vaNormals.push_back(0);
 			}
-			// cylinder part
+			// for the cylinder part, the normals point straight out from the center
 			else
 			{
 				int vaIndex = (i * (SLICES + 1) + j) * 3;
-				float magnitude = sqrt(vaVertices.at(vaIndex) * vaVertices.at(vaIndex) +
-									   vaVertices.at(vaIndex + 2) * vaVertices.at(vaIndex + 2));
+
+				GLfloat x = vaVertices.at(vaIndex);
+				GLfloat y = vaVertices.at(vaIndex + 1);
+				GLfloat z = vaVertices.at(vaIndex + 2);
+				GLfloat magnitude = glm::length(glm::vec3(x, y, z));
 
 				vaNormals.push_back(vaVertices.at(vaIndex) / magnitude);
 				vaNormals.push_back(0);
@@ -203,12 +216,16 @@ void Pedestal::ComputeVaNormals()
 
 void Pedestal::ComputeDebugVertices()
 {
-	for (int i = 0; i < numVaVertices; i++)
+	// this functions behaves in exactly the same way as Balloon::GenerateDebugVertices
+
+	for (int i = 0; i < NUM_VA_VERTICES; i++)
 	{
+		// coordinates of the vertex
 		float vX = vaVertices.at(i * 3);
 		float vY = vaVertices.at(i * 3 + 1);
 		float vZ = vaVertices.at(i * 3 + 2);
 
+		// coordinates of the vertex plus its normal
 		float nX = vX + vaNormals.at(i * 3) * NORMAL_LENGTH_SCALE;
 		float nY = vY + vaNormals.at(i * 3 + 1) * NORMAL_LENGTH_SCALE;
 		float nZ = vZ + vaNormals.at(i * 3 + 2) * NORMAL_LENGTH_SCALE;
@@ -225,7 +242,9 @@ void Pedestal::ComputeDebugVertices()
 
 void Pedestal::GenerateDebugIndices()
 {
-	for (int i = 0; i < numDebugIndices; i++)
+	// this functions behaves in exactly the same way as Balloon::GenerateDebugIndices
+
+	for (int i = 0; i < NUM_DEBUG_INDICES; i++)
 	{
 		debugIndices.push_back(i);
 	}

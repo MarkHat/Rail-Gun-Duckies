@@ -113,6 +113,14 @@ bool Game::prevGreenHit = FALSE;
 
 bool Game::paused = false;
 
+void Game::Destruct()
+{
+	delete(ducky);
+	delete(railgun);
+	delete(redBalloon);
+	delete(greenBalloon);
+	delete(blueBalloon);
+}
 
 void Game::TogglePause()
 {
@@ -863,7 +871,6 @@ void Game::FireDucky()
 
 void Game::ToggleReplay()
 {
-
 	if (!duckyFired && replayType != NEW_GAME && mode == MANUAL)
 	{
 		replay = !replay;
@@ -874,7 +881,6 @@ void Game::ToggleReplay()
 		replay = FALSE;
 
 	}
-
 }
 
 bool Game::GetReplay()
@@ -892,12 +898,10 @@ void Game::SetPreviousGameState(ReplayType type)
 	prevRedHit = redHit;
 	prevGreenHit = greenHit;
 	prevBlueHit = blueHit;
-	
 }
 
 void Game::Replay()
 {
-
 	if (!redHit && !blueHit && !greenHit && (duckiesLeft >= prevDuckiesLeft))
 	{
 		redBalloon->SetPosition(prevRedBalloonPosition.x, prevRedBalloonPosition.y, prevRedBalloonPosition.z);
@@ -914,4 +918,3 @@ void Game::Replay()
 	railgun->SetPitch(prevPitch);
 	FireDucky();
 }
-

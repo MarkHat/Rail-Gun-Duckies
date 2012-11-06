@@ -28,6 +28,14 @@ RailGun * Beauty::railgun = new RailGun();
 Balloon * Beauty::balloon = new Balloon();
 Pedestal * Beauty::pedestal = new Pedestal();
 
+void Beauty::Destruct()
+{
+	delete(ducky);
+	delete(railgun);
+	delete(balloon);
+	delete(pedestal);
+}
+
 void Beauty::ToggleDebug()
 {
 	debug = !debug;
@@ -63,14 +71,17 @@ void Beauty::DisplayXYZ()
 	glMatrixMode(GL_MODELVIEW);
 	glBegin(GL_LINES);
 
+	// red x-axis line
 	glColor3f(1, 0, 0);
 	glVertex3f(0, 0, 0);
 	glVertex3f(1, 0, 0);
 	
+	// green y-axis line
 	glColor3f(0, 1, 0);
 	glVertex3f(0, 0, 0);
 	glVertex3f(0, 1, 0);
 	
+	// blue z-axis line
 	glColor3f(0, 0, 1);
 	glVertex3f(0, 0, 0);
 	glVertex3f(0, 0, 1);
@@ -83,6 +94,10 @@ void Beauty::DisplayXYZ()
 
 void Beauty::Update(bool paused)
 {
+	// in beauty mode, objects are rotated according to a large, total elapsed time. As such,
+	// the total amount of time paused is subtracted from the actual total elapsed time to
+	// compute the "real" elapsed time. This allows for a smooth return to rotation after pausing
+
 	oldElapsedTime = newElapsedTime;
 	newElapsedTime = (double) glutGet(GLUT_ELAPSED_TIME) / 1000;
 
@@ -98,8 +113,10 @@ void Beauty::Update(bool paused)
 
 void Beauty::Display()
 {
-	// note: the casts to GLfloat make a few warnings go away
+	// everything here is rotated according to the "real" elapsed time, which is the actual elapsed
+	// time minus the total paused time
 
+	// everything is tilted to give a better viewing angle
 	glPushMatrix();
 	glTranslatef(PEDESTAL_POSITION.x, PEDESTAL_POSITION.y, PEDESTAL_POSITION.z);
 	glRotatef(VIEW_TILT, 1, 0, 0);
@@ -109,6 +126,7 @@ void Beauty::Display()
 
 	glPushMatrix();
 
+	// each object is translated by a difference amount due to different object sizes
 	switch (mode)
 	{
 		case DUCKY:

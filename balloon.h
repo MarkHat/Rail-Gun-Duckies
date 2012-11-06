@@ -37,11 +37,6 @@ class Balloon
 
 		glm::vec3 position;
 
-		int numVaVertices;
-		int numVaIndices;
-		int numDebugVertices;
-		int numDebugIndices;
-
 		void ComputeVaVertices();
 		void GenerateVaIndices();
 		void ComputeVaNormals();

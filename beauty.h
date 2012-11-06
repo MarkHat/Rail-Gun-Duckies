@@ -11,8 +11,11 @@ class Beauty
 	public:
 		static void Update(bool paused);
 		static void Display();
+
 		static void ToggleDebug();
 		static void CycleMode();
+
+		static void Destruct();
 
 	private:
 		static enum Mode mode;

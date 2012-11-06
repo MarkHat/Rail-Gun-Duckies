@@ -1,4 +1,5 @@
 #include <GL/freeglut.h>
+#include <glm/glm.hpp>
 #include <vector>
 
 #pragma once
@@ -26,11 +27,6 @@ class Pedestal
 
 		vector<GLfloat> debugVertices;
 		vector<GLuint> debugIndices;
-
-		int numVaVertices;
-		int numVaIndices;
-		int numDebugVertices;
-		int numDebugIndices;
 
 		void ComputeVaVertices();
 		void GenerateVaIndices();

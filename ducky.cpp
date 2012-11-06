@@ -29,6 +29,7 @@ Ducky::Ducky()
 	duckyDisplayListHandle = -1;
 	boundingBoxDisplayListHandle = -1;
 
+	// note: most of these variables will be set by Game anyway
 	oldPosition = glm::vec3(0, 0, 0);
 	newPosition = glm::vec3(0, 0, 0);
 	headPosition = glm::vec3(HEAD_OFFSET.x, HEAD_OFFSET.y, HEAD_OFFSET.z);
@@ -47,6 +48,8 @@ void Ducky::ToggleDebug()
 
 void Ducky::CreateDuckyDisplayList()
 {
+	// note: the entire ducky is just made up of a bunch of transformed/scaled spheres
+
 	duckyDisplayListHandle = glGenLists(1);
 	glNewList(duckyDisplayListHandle, GL_COMPILE);
 
@@ -166,7 +169,7 @@ void Ducky::CreateBoundingBoxDisplayList()
 	glVertex3f(boxVertices[7].x, boxVertices[7].y, boxVertices[7].z);
 	glVertex3f(boxVertices[4].x, boxVertices[4].y, boxVertices[4].z);
 
-	// vertical lines
+	// vertical lines (there are four)
 	glVertex3f(boxVertices[3].x, boxVertices[3].y, boxVertices[3].z);
 	glVertex3f(boxVertices[7].x, boxVertices[7].y, boxVertices[7].z);
 	glVertex3f(boxVertices[4].x, boxVertices[4].y, boxVertices[4].z);
@@ -272,6 +275,11 @@ void Ducky::Update(double elapsedTime, GLfloat speed, GLfloat gravity)
 	// update rotation according to the ducky's flight path
 	rotation.x = -glm::asin(velocity.x / speed) / RADIAN_CONVERSION;
 	rotation.y = glm::asin(velocity.y / speed) / RADIAN_CONVERSION;
+
+	// rotation was originally going to keep track of the ducky's yaw, pitch, and roll. However,
+	// roll was giving us a lot of trouble, so we intentially rotated the railgun so that there
+	// will never be any roll. For simplicity, we're just setting rotation.z to zero.
+
 	//rotation.z = -glm::acos(velocity.z / speed) / RADIAN_CONVERSION;
 	rotation.z = 0;
 

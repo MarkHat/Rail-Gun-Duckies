@@ -24,8 +24,9 @@ class Game
 
 		static void ToggleReplay();
 		static bool GetReplay();
-
 		static void TogglePause();
+
+		static void Destruct();
 
 	private:
 		static int score;

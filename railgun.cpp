@@ -7,12 +7,14 @@ const int ANIMATION_FRAMES = 60;
 const glm::vec3 LONG_PIECE_SCALE = glm::vec3(0.33, 0.33, 5);
 const glm::vec3 LONG_PIECE_TRANSLATION = glm::vec3(0.67, 0.67, -5.5);
 
+const glm::vec3 END_PIECE_SCALE = glm::vec3(1, 1, 0.5);
 const glm::vec3 FAR_END_PIECE_TRANSLATION = glm::vec3(0, 0, -11);
 
 RailGun::RailGun()
 {
 	railgunDisplayList = -1;
 
+	// note: most of these variables will be set by Game anyway
 	yaw = 0;
 	pitch = 0;
 	targetYaw = 0;
@@ -29,6 +31,7 @@ RailGun::~RailGun()
 
 void DrawFace()
 {
+	// this just draws a square
 	glBegin(GL_QUADS);
 	glVertex3f(1, 1, 0);
 	glVertex3f(1, -1, 0);
@@ -39,6 +42,8 @@ void DrawFace()
 
 void DrawCube()
 {
+	// note: all faces are rotated so that they're normals face out
+
 	// back face
 	glPushMatrix();
 	glTranslatef(0, 0, -1);
@@ -83,7 +88,7 @@ void DrawCube()
 
 void DrawEndPiece()
 {
-	glScalef(1, 1, 0.5);
+	glScalef(END_PIECE_SCALE.x, END_PIECE_SCALE.y, END_PIECE_SCALE.z);
 	DrawCube();
 }
 
@@ -96,6 +101,8 @@ void DrawLongPiece()
 void DrawGun()
 {
 	glPushMatrix();
+
+	// note: this translation causes the pivot point of the railgun to be in the right place 
 	glTranslatef(0, 0, 4);
 
 	// close end piece
@@ -184,13 +191,15 @@ void RailGun::SetTargetPitch(GLfloat targetPitch)
 
 void RailGun::UpdateYaw(int mouseX, int windowWidth)
 { 
-	// note: the cast to GLfloat makes a warning go away
+	// the yaw is calculated from the horizontal center of the screen. YAW_RANGE is used
+	// so that each screen half-width spans 0 - YAW_RANGE degrees
 	yaw = -GLfloat((mouseX - windowWidth / 2)) / (windowWidth / YAW_RANGE);
 }
 
 void RailGun::UpdatePitch(int mouseY, int windowHeight)
 {
-	// note: the cast to GLfloat makes a warning go away
+	// unlike yaw, the pitch is calculated from the bottom of the screen. PITCH_RANGE is used
+	// so that the entire height of the screen spans 0 - PITCH_RANGE degrees
 	pitch = GLfloat(PITCH_RANGE) - mouseY / (windowHeight / PITCH_RANGE);
 }
 
@@ -203,6 +212,8 @@ void RailGun::SetPosition(GLfloat x, GLfloat y, GLfloat z)
 
 void RailGun::SetAnimating()
 {
+	// these variables are used to allow the railgun to move smoothly from its current
+	// pitch/yaw to its target pitch/yaw
 	yawIncrement = (targetYaw - yaw) / ANIMATION_FRAMES;
 	pitchIncrement = (targetPitch - pitch) / ANIMATION_FRAMES;
 
@@ -211,6 +222,7 @@ void RailGun::SetAnimating()
 
 void RailGun::MoveTowardsTarget()
 {
+	// the railgun will "animate" towards its target over ANIMATION_FRAMES frames
 	if (animationFrame < ANIMATION_FRAMES)
 	{
 		yaw += yawIncrement;
@@ -220,9 +232,11 @@ void RailGun::MoveTowardsTarget()
 	}
 	else
 	{
+		// reset animation
 		animationFrame = 0;
 		animating = false;
 
+		// this corrects for any possible precision loss
 		yaw = targetYaw;
 		pitch = targetPitch;
 	}

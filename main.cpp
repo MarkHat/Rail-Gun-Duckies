@@ -344,5 +344,8 @@ int main(int argc, char * argv[])
 
 	glutMainLoop();
 
+	Beauty::Destruct();
+	Game::Destruct();
+
 	return 0;
 }
