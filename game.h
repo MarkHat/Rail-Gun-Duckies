@@ -60,18 +60,23 @@ class Game
 
 		static double prevPitch;
 		static double prevYaw;
+
 		static int prevScore;
 		static int prevDuckiesLeft;
+
 		static enum ReplayType replayType;
+
 		static glm::vec3 prevRedBalloonPosition;
 		static glm::vec3 prevGreenBalloonPosition;
 		static glm::vec3 prevBlueBalloonPosition;
 		static glm::vec3 currRedBalloonPosition;
 		static glm::vec3 currGreenBalloonPosition;
 		static glm::vec3 currBlueBalloonPosition;
+		static glm::vec3 duckyReFiredPosition;
+
 		static bool replay;
 		static double replayTimer;
-		static glm::vec3 duckyReFiredPosition;
+
 		static bool prevRedHit;
 		static bool prevGreenHit;
 		static bool prevBlueHit;

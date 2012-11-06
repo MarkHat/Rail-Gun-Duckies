@@ -11,6 +11,7 @@ const int PERIOD = 1000 / FPS;
 const GLfloat TEXT_SIZE = GLfloat(0.12);
 const glm::vec3 MODE_TEXT_POSITION = glm::vec3(10, 10, -1);
 const glm::vec3 PAUSED_TEXT_POSITION = glm::vec3(10, 35, -1);
+const glm::vec3 REPLAY_TEXT_POSITION = glm::vec3(10, 60, -1);
 
 const char * RUBBER_DUCKY_BEAUTY_TEXT = "Rubber Ducky Beauty Mode";
 const char * RAILGUN_BEAUTY_TEXT = "Railgun Beauty Mode";
@@ -18,6 +19,7 @@ const char * BALLOON_BEAUTY_TEXT = "Balloon Beauty Mode";
 const char * MANUAL_TEXT = "Manual Mode";
 const char * AUTOMATED_TEXT = "Automated Mode";
 const char * PAUSED_TEXT = "(paused)";
+const char * REPLAY_TEXT = "(replay)";
 
 const int PERSPECTIVE_ANGLE = 45;
 const int PERSPECTIVE_NEAR = 1;
@@ -70,8 +72,10 @@ void CycleGameMode()
 		case BALLOON_BEAUTY:
 			Beauty::CycleMode();
 			Game::CycleGameMode();
-			glDisable(GL_LIGHT1);
 			gameMode = MANUAL;
+
+			// game mode uses only light
+			glDisable(GL_LIGHT1);
 
 			break;
 
@@ -83,8 +87,10 @@ void CycleGameMode()
 
 		case AUTOMATED:
 			Game::CycleGameMode();
-			glEnable(GL_LIGHT1);
 			gameMode = RUBBER_DUCKY_BEAUTY;
+
+			// beauty mode uses two lights
+			glEnable(GL_LIGHT1);
 
 			break;
 	}
@@ -103,6 +109,7 @@ void DisplayText(const char * text, glm::vec3 textPosition)
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 
+	// draw the text
 	glLoadIdentity();
 	glColor3f(1, 1, 1);
 	glTranslatef(textPosition.x, windowHeight - glutStrokeHeight(GLUT_STROKE_MONO_ROMAN) * TEXT_SIZE - textPosition.y, textPosition.z);
@@ -149,11 +156,11 @@ const char * AssignGameModeText()
 
 void Display()
 {
-
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glPolygonMode(GL_FRONT_AND_BACK, wireFrame ? GL_LINE : GL_FILL);
 
+	// display all beauty/game mode content
 	switch(gameMode)
 	{
 		case RUBBER_DUCKY_BEAUTY:
@@ -168,12 +175,20 @@ void Display()
 			break;
 	}
 
+	// display the game mode
 	const char * TEXT = AssignGameModeText();
 	DisplayText(TEXT, MODE_TEXT_POSITION);
 
+	// display pause text
 	if (paused)
 	{
 		DisplayText(PAUSED_TEXT, PAUSED_TEXT_POSITION);
+	}
+
+	// display replay text
+	if (Game::GetReplay())
+	{
+		DisplayText(REPLAY_TEXT, REPLAY_TEXT_POSITION);
 	}
 
 	glutSwapBuffers();
@@ -181,7 +196,7 @@ void Display()
 
 void ReshapeFunc(int w, int h)
 {
-	// this prevents divide by zero errors
+	// this prevents divide-by-zero errors
 	if (h == 0)
 	{
 		return;
@@ -247,6 +262,7 @@ void KeyboardFunc(unsigned char c, int x, int y)
 
 void MouseMotionFunc(int x, int y)
 {
+	// the railgun should only follow the mouse in manual, unpaused mode
 	if (gameMode != AUTOMATED && !paused)
 	{
 		Game::MouseMotionFunc(x, y, windowWidth, windowHeight);
@@ -263,6 +279,7 @@ void SpecialFunc(int key, int x, int y)
 
 void TimerFunc(int value)
 {
+	// beauty and game mode are updated once a frame
 	switch (gameMode)
 	{
 		case RUBBER_DUCKY_BEAUTY:
@@ -290,13 +307,14 @@ void CreateLights()
 	glMaterialfv(GL_FRONT, GL_SHININESS, MAT_SHININESS);
 
 	// reference: http://www.opengl.org/sdk/docs/man/xhtml/glLight.xml
+	// light 0 information
 	glLightfv(GL_LIGHT0, GL_POSITION, LIGHT_0_POSITION);
-	glLightfv(GL_LIGHT1, GL_POSITION, LIGHT_1_POSITION);
-
 	glLightfv(GL_LIGHT0, GL_AMBIENT, LIGHT_AMBIENT);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, LIGHT_DIFFUSE);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, LIGHT_SPECULAR);
-
+	
+	// light 1 information
+	glLightfv(GL_LIGHT1, GL_POSITION, LIGHT_1_POSITION);
 	glLightfv(GL_LIGHT1, GL_AMBIENT, LIGHT_AMBIENT);
 	glLightfv(GL_LIGHT1, GL_DIFFUSE, LIGHT_DIFFUSE);
 	glLightfv(GL_LIGHT1, GL_SPECULAR, LIGHT_SPECULAR);
@@ -310,6 +328,7 @@ void CreateLights()
 
 int main(int argc, char * argv[])
 {
+	// initialize GL things
 	glViewport(0, 0, windowWidth, windowHeight);
 	glutInit(&argc, argv);
 	glutInitWindowPosition(0, 0);
@@ -317,6 +336,7 @@ int main(int argc, char * argv[])
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
 	glutCreateWindow("Rail Gun Duckies");
 
+	// initialize the perspective
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	gluPerspective(PERSPECTIVE_ANGLE, aspect, PERSPECTIVE_NEAR, PERSPECTIVE_FAR);
@@ -329,6 +349,8 @@ int main(int argc, char * argv[])
 	paused = false;
 
 	CreateLights();
+
+	// set up callbacks
 	glutDisplayFunc(Display); 
 	glutReshapeFunc(ReshapeFunc);
 	glutKeyboardFunc(KeyboardFunc);
