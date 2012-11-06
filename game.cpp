@@ -55,6 +55,16 @@ enum CameraModes
 	FIRST_PERSON,
 };
 
+enum ReplayType
+{
+	NEW_GAME,
+	MISS,
+	RED_BALLOON,
+	GREEN_BALLOON,
+	BLUE_BALLOON,
+	DUCKY_FIRED_MID_FLIGHT
+};
+
 int Game::score = 0;
 int Game::duckiesLeft = 3;
 
@@ -82,6 +92,32 @@ bool Game::blueHit = false;
 
 glm::vec3 Game::cameraPosition = glm::vec3(0, 0, 0);
 glm::vec3 Game::cameraLookAt = glm::vec3(0, 0, -1);
+
+double Game::prevPitch = 0;
+double Game::prevYaw = 0;
+int Game::prevScore;
+int Game::prevDuckiesLeft;
+enum ReplayType Game::replayType = NEW_GAME;
+bool Game::replay = FALSE;
+double Game::replayTimer = 0;
+glm::vec3 Game::prevRedBalloonPosition;
+glm::vec3 Game::prevGreenBalloonPosition;
+glm::vec3 Game::prevBlueBalloonPosition;
+glm::vec3 Game::currRedBalloonPosition;
+glm::vec3 Game::currGreenBalloonPosition;
+glm::vec3 Game::currBlueBalloonPosition;
+glm::vec3 Game::duckyReFiredPosition;
+bool Game::prevRedHit = FALSE;
+bool Game::prevBlueHit = FALSE;
+bool Game::prevGreenHit = FALSE;
+
+bool Game::paused = false;
+
+
+void Game::TogglePause()
+{
+	paused = !paused;
+}
 
 void Game::ToggleDebug()
 {
@@ -121,6 +157,8 @@ void Game::CycleGameMode()
 	{
 		case MANUAL:
 			mode = AUTOMATED;
+			ToggleReplay();
+			replayType = NEW_GAME;
 			ResetGame();
 
 			break;
@@ -131,6 +169,7 @@ void Game::CycleGameMode()
 
 		case IDLE:
 			mode = MANUAL;
+			replayType = NEW_GAME;
 			ResetGame();
 
 			break;	
@@ -139,7 +178,7 @@ void Game::CycleGameMode()
 
 void Game::MouseMotionFunc(int x, int y, int windowWidth, int windowHeight)
 {
-	if (!duckyFired)
+	if (!duckyFired && !replay)
 	{
 		railgun->UpdateYaw(x, windowWidth);
 		railgun->UpdatePitch(y, windowHeight);
@@ -184,28 +223,37 @@ void Game::DisplayBalloonText(Balloon * balloon, const char * balloonText)
 void Game::RegenerateBalloons()
 {
 	// note: the casts to GLfloat get rid of a few warnings
-
-	srand((unsigned int)time(NULL));
-
-	for (int i = 0; i < 3; i++)
+	if (replay) 
 	{
-		GLfloat x = GLfloat(-BALLOON_GEN_X_OFFSET) + rand() % (BALLOON_GEN_X_OFFSET * 2);
-		GLfloat y = GLfloat(BALLOON_GEN_Y_OFFSET) + (rand() % BALLOON_GEN_Y_HEIGHT);
-		GLfloat z = (GLfloat(BALLOON_GEN_Z_OFFSET) + BALLOON_GEN_Z_LENGTH * i + rand() % BALLOON_GEN_Z_LENGTH) * -1;
+		redBalloon->SetPosition(currRedBalloonPosition.x, currRedBalloonPosition.y, currRedBalloonPosition.z);
+		greenBalloon->SetPosition(currGreenBalloonPosition.x, currGreenBalloonPosition.y, currGreenBalloonPosition.z);
+		blueBalloon->SetPosition(currBlueBalloonPosition.x, currBlueBalloonPosition.y, currBlueBalloonPosition.z);
+	}
 
-		switch (i)
+	else
+	{
+		srand((unsigned int)time(NULL));
+
+		for (int i = 0; i < 3; i++)
 		{
-			case 0:
-				redBalloon->SetPosition(x, y, z);
-				break;
+			GLfloat x = GLfloat(-BALLOON_GEN_X_OFFSET) + rand() % (BALLOON_GEN_X_OFFSET * 2);
+			GLfloat y = GLfloat(BALLOON_GEN_Y_OFFSET) + (rand() % BALLOON_GEN_Y_HEIGHT);
+			GLfloat z = (GLfloat(BALLOON_GEN_Z_OFFSET) + BALLOON_GEN_Z_LENGTH * i + rand() % BALLOON_GEN_Z_LENGTH) * -1;
 
-			case 1:
-				greenBalloon->SetPosition(x, y, z);
-				break;
+			switch (i)
+			{
+				case 0:
+					redBalloon->SetPosition(x, y, z);
+					break;
 
-			case 2:
-				blueBalloon->SetPosition(x, y, z);
-				break;
+				case 1:
+					greenBalloon->SetPosition(x, y, z);
+					break;
+
+				case 2:
+					blueBalloon->SetPosition(x, y, z);
+					break;
+			}
 		}
 	}
 }
@@ -230,6 +278,10 @@ void Game::ResetDucky()
 
 void Game::ResetBalloons()
 {
+	prevRedBalloonPosition = redBalloon->GetPosition();
+	prevGreenBalloonPosition = greenBalloon->GetPosition();
+	prevBlueBalloonPosition = blueBalloon->GetPosition();
+
 	RegenerateBalloons();
 
 	redHit = false;
@@ -262,6 +314,8 @@ void Game::HandleCollisions()
 {
 	// destroy the ducky when it passes a certain z distance
 	if (ducky->GetNewPosition().z < COLLISION_FAR_BOUNDARY) {
+		
+		SetPreviousGameState(MISS);
 		duckiesLeft--;
 
 		if (duckiesLeft == 0)
@@ -290,6 +344,7 @@ void Game::HandleCollisions()
 
 			if (!redHit && CheckDuckyBalloonCollision(duckyTempPosition, redBalloon))
 			{
+				SetPreviousGameState(RED_BALLOON);
 				score += RED_BALLOON_VALUE;
 				redHit = true;
 
@@ -297,6 +352,7 @@ void Game::HandleCollisions()
 			}
 			else if (!greenHit && CheckDuckyBalloonCollision(duckyTempPosition, greenBalloon))
 			{
+				SetPreviousGameState(GREEN_BALLOON);
 				score += GREEN_BALLOON_VALUE;
 				greenHit = true;
 
@@ -304,6 +360,7 @@ void Game::HandleCollisions()
 			}
 			else if (!blueHit && CheckDuckyBalloonCollision(duckyTempPosition, blueBalloon))
 			{
+				SetPreviousGameState(BLUE_BALLOON);
 				score += BLUE_BALLOON_VALUE;
 				blueHit = true;
 
@@ -412,30 +469,53 @@ void Game::AutomateRailgun()
 	}
 }
 
-void Game::Update(bool paused)
+void Game::Update()
 {
 	oldElapsedTime = newElapsedTime;
 	newElapsedTime = double(glutGet(GLUT_ELAPSED_TIME)) / 1000;
 
 	double difference = newElapsedTime - oldElapsedTime;
 
-	if (mode == AUTOMATED)
+	if (replay && !duckyFired)
 	{
-		if (!duckyFired)
+		replayTimer++;
+
+		if (replayTimer == 60)
 		{
-			AutomateRailgun();
+			replayTimer = 0;
+			Replay();
 		}
 	}
-
-	if (duckyFired)
-	{
-		ducky->Update(difference, LAUNCH_SPEED, GRAVITY);
-		HandleCollisions();
-
-		// check if new balloons should be generated
-		if (redHit && greenHit && blueHit)
+	else if (!paused){
+		if (mode == AUTOMATED)
 		{
-			ResetBalloons();
+			if (!duckyFired)
+			{
+				AutomateRailgun();
+			}
+		}
+
+		if (duckyFired)
+		{
+			ducky->Update(difference, LAUNCH_SPEED, GRAVITY);
+			HandleCollisions();
+
+			
+				if (replay && replayType == DUCKY_FIRED_MID_FLIGHT)
+				{
+					glm::vec3 duckyPosition = ducky->GetNewPosition();
+
+					if (duckyPosition.z <= duckyReFiredPosition.z)
+					{
+						FireDucky();
+					}
+				}
+
+			// check if new balloons should be generated
+			if (redHit && greenHit && blueHit)
+			{
+				ResetBalloons();
+			}
 		}
 	}
 }
@@ -763,8 +843,10 @@ void Game::FireDucky()
 	else
 	{
 		// in manual mode, the ducky can be destroyed mid-flight
-		if (mode == MANUAL)
+		if (mode == MANUAL && !paused)
 		{
+			duckyReFiredPosition = ducky->GetNewPosition();
+			SetPreviousGameState(DUCKY_FIRED_MID_FLIGHT);
 			duckiesLeft--;
 
 			if (duckiesLeft == 0)
@@ -778,3 +860,58 @@ void Game::FireDucky()
 		}
 	}
 }
+
+void Game::ToggleReplay()
+{
+
+	if (!duckyFired && replayType != NEW_GAME && mode == MANUAL)
+	{
+		replay = !replay;
+	}
+
+	else if (mode == AUTOMATED && replay){
+
+		replay = FALSE;
+
+	}
+
+}
+
+bool Game::GetReplay()
+{
+	return replay;
+}
+
+void Game::SetPreviousGameState(ReplayType type)
+{
+	prevScore = score;
+	prevDuckiesLeft = duckiesLeft;
+	prevPitch = railgun->GetPitch();
+	prevYaw = railgun->GetYaw();
+	replayType = type;
+	prevRedHit = redHit;
+	prevGreenHit = greenHit;
+	prevBlueHit = blueHit;
+	
+}
+
+void Game::Replay()
+{
+
+	if (!redHit && !blueHit && !greenHit && (duckiesLeft >= prevDuckiesLeft))
+	{
+		redBalloon->SetPosition(prevRedBalloonPosition.x, prevRedBalloonPosition.y, prevRedBalloonPosition.z);
+		greenBalloon->SetPosition(prevGreenBalloonPosition.x, prevGreenBalloonPosition.y, prevGreenBalloonPosition.z);
+		blueBalloon->SetPosition(prevBlueBalloonPosition.x, prevBlueBalloonPosition.y, prevBlueBalloonPosition.z);
+	}
+
+	redHit = prevRedHit;
+	greenHit = prevGreenHit;
+	blueHit = prevBlueHit;
+	score = prevScore;
+	duckiesLeft = prevDuckiesLeft;
+	railgun->SetYaw(prevYaw);
+	railgun->SetPitch(prevPitch);
+	FireDucky();
+}
+

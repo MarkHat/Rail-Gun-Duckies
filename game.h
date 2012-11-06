@@ -12,7 +12,7 @@ class Game
 {
 	public:
 		static void ToggleDebug();
-		static void Update(bool paused);
+		static void Update();
 		static void Display();
 
 		static void MouseMotionFunc(int x, int y, int windowWidth, int windowHeight);
@@ -21,6 +21,11 @@ class Game
 		static void CycleGameMode();
 		static void CycleCameraMode();
 		static void SetWindowDimensions(int width, int height);
+
+		static void ToggleReplay();
+		static bool GetReplay();
+
+		static void TogglePause();
 
 	private:
 		static int score;
@@ -52,6 +57,24 @@ class Game
 		static glm::vec3 cameraPosition;
 		static glm::vec3 cameraLookAt;
 
+		static double prevPitch;
+		static double prevYaw;
+		static int prevScore;
+		static int prevDuckiesLeft;
+		static enum ReplayType replayType;
+		static glm::vec3 prevRedBalloonPosition;
+		static glm::vec3 prevGreenBalloonPosition;
+		static glm::vec3 prevBlueBalloonPosition;
+		static glm::vec3 currRedBalloonPosition;
+		static glm::vec3 currGreenBalloonPosition;
+		static glm::vec3 currBlueBalloonPosition;
+		static bool replay;
+		static double replayTimer;
+		static glm::vec3 duckyReFiredPosition;
+		static bool prevRedHit;
+		static bool prevGreenHit;
+		static bool prevBlueHit;
+
 		static void SetCamera();
 		static char * AssignCameraModeText();
 
@@ -77,4 +100,7 @@ class Game
 
 		static GLfloat EstimateTargetPitch(float xDifference, float yDifference, float zDifference, float targetY);
 		static void AutomateRailgun();
+
+		static void SetPreviousGameState(ReplayType replayType);
+		static void Replay();
 };

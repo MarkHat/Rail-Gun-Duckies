@@ -149,7 +149,7 @@ const char * AssignGameModeText()
 
 void Display()
 {
-	glViewport(0, 0, windowWidth, windowHeight);
+
 	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glPolygonMode(GL_FRONT_AND_BACK, wireFrame ? GL_LINE : GL_FILL);
@@ -214,7 +214,11 @@ void KeyboardFunc(unsigned char c, int x, int y)
 
 		// space
 		case 32:
-			Game::FireDucky();
+			if (!Game::GetReplay())
+			{
+				Game::FireDucky();
+			}
+			break;
 			break;
 
 		case 'c':
@@ -231,13 +235,19 @@ void KeyboardFunc(unsigned char c, int x, int y)
 		case 'p':
 		case 'P':
 			paused = !paused;
+			Game::TogglePause();
+			break;
+
+		case 'r':
+		case 'R':
+			Game::ToggleReplay();
 			break;
 	}
 }
 
 void MouseMotionFunc(int x, int y)
 {
-	if (gameMode != AUTOMATED)
+	if (gameMode != AUTOMATED && !paused)
 	{
 		Game::MouseMotionFunc(x, y, windowWidth, windowHeight);
 	}
@@ -263,7 +273,7 @@ void TimerFunc(int value)
 
 		case MANUAL:
 		case AUTOMATED:
-			Game::Update(paused);
+			Game::Update();
 			break;
 	}
 
@@ -300,6 +310,7 @@ void CreateLights()
 
 int main(int argc, char * argv[])
 {
+	glViewport(0, 0, windowWidth, windowHeight);
 	glutInit(&argc, argv);
 	glutInitWindowPosition(0, 0);
 	glutInitWindowSize(windowWidth, windowHeight);
@@ -308,9 +319,9 @@ int main(int argc, char * argv[])
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
+	gluPerspective(PERSPECTIVE_ANGLE, aspect, PERSPECTIVE_NEAR, PERSPECTIVE_FAR);
 
 	// reference: http://www.opengl.org/sdk/docs/man/xhtml/gluPerspective.xml
-	gluPerspective(PERSPECTIVE_ANGLE, aspect, PERSPECTIVE_NEAR, PERSPECTIVE_FAR);
 	glEnable(GL_DEPTH_TEST);
 
 	wireFrame = false;
@@ -318,7 +329,6 @@ int main(int argc, char * argv[])
 	paused = false;
 
 	CreateLights();
-
 	glutDisplayFunc(Display); 
 	glutReshapeFunc(ReshapeFunc);
 	glutKeyboardFunc(KeyboardFunc);
